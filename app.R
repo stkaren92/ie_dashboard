@@ -15,11 +15,15 @@ names(raster_list) <- gsub('data/ie//ie_xgb_slic_','',
                            gsub('.tif','',raster_files))
 
 # Read ANP shapefile
-anp <- vect('data/anp/186ANP_ITRF08_19012023.shp')
-anp <-  project(anp, crs(raster_list['2017']))
+anp_file <- vect('data/anp/186ANP_ITRF08_19012023.shp')
+anp_file <-  project(anp_file, crs(raster_list['2017']))
+cosmos_anps <- read.csv('data/anp_cosmos/cosmos_anps.csv')
 
 # Threshold to define IE categories
 ie_threshold <- 4
+pal <- colorNumeric(c("darkgreen", "#FFFFCC", "red"), 
+                    c(-11,18),
+                    na.color = "transparent")
 
 ui <- fluidPage(
   # Application title
@@ -30,10 +34,13 @@ ui <- fluidPage(
     # Sidebar panel for inputs
     sidebarPanel(
       width = 3,
+      
+      # Select filter ANPs in COSMOS
+      checkboxInput("cosmos", label = "Filtrar COSMOS", value=TRUE),
+      
       # Select ANP
-      selectizeInput( 'anp', label = "Seleccionar ANP", 
-                      choices = sort(anp$NOMBRE), multiple=FALSE,
-                      selected = 'Mariposa Monarca'),
+      selectizeInput('anp', label = "Seleccionar ANP", 
+                      choices = NULL, multiple=FALSE),
       # Select year
       tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}"),
       sliderInput("year", label = "Seleccionar año", 
@@ -87,12 +94,32 @@ ui <- fluidPage(
 )
 
 # Define server
-server <- function(input, output) {
+server <- function(input, output, session) {
+  
+  # Returns list of ANPs' names
+  anp_names_list <- reactive({
+    if(input$cosmos==TRUE){
+      anp_names_list <- subset(anp_file, 
+                               anp_file$NOMBRE %in% cosmos_anps$ANP_name)$NOMBRE
+    }else{
+      anp_names_list <- anp_file$NOMBRE
+    }
+    return(anp_names_list)
+  })
+  
+  # Updates list of ANPs to select from
+  observeEvent(anp_names_list(),{
+    updateSelectizeInput(session, 
+                         inputId = "anp",
+                         choices = sort(anp_names_list()),
+                         selected = 'Barranca de Metztitlán'
+    )
+  })
   
   # Filters shapefile with selected ANP
   anp_selected <- reactive({
     req(input$anp)
-    subset(anp, anp$NOMBRE == input$anp)
+    return(subset(anp_file, anp_file$NOMBRE == input$anp))
   })
   
   # Reads IE raster from the selected year
@@ -194,9 +221,6 @@ server <- function(input, output) {
   
   # Based map of selected ANP
   output$map <- renderLeaflet({
-    pal <- colorNumeric(c("darkgreen", "#FFFFCC", "red"), 
-                        c(-11,18),
-                        na.color = "transparent")
     
     leaflet() %>% addTiles() %>%
       addPolygons(data = st_transform(sf::st_as_sf(anp_selected()), 
