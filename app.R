@@ -44,7 +44,7 @@ ui <- fluidPage(
       # Select year
       tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}"),
       sliderInput("year", label = "Seleccionar año", 
-                  min = 2016, max = 2022, value = 2016,
+                  min = 2017, max = 2022, value = 2017,
                   animate = animationOptions(interval = 3000)),
     ),
     
