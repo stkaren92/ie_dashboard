@@ -5,7 +5,7 @@ library(sf)
 library(terra)
 library(leaflet)
 library(grid)
-library(gridExtra)
+library(gridExtra) 
 library(bslib)
 
 # Read IE rasters
