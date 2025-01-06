@@ -1,0 +1,13 @@
+name: ie_dashboard
+title: ie_dashboard
+username: karensanchez
+account: karensanchez
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13466512
+bundleId: 9426677
+url: https://karensanchez.shinyapps.io/ie_dashboard/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: visualizations.R
