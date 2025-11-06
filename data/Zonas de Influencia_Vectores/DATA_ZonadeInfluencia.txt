@@ -1,0 +1,20 @@
+Nombre del vector	categoria + nombre
+zi6702093_25gw	Área de Protección de Flora y Fauna Corredor Biológico Chichinautzin
+zi6309015_25cw	Parque Nacional El Tepozteco
+zi6308013_25cw	Parque Nacional Lagunas de Zempoala
+zi6601042_25cw	Área de Protección de Flora y Fauna Z.P.F.T.C.C. de los ríos Valle de Bravo, Malacatepec, Tilostoc y Temascaltepec
+zi6104138_25cw	Reserva de la Biosfera Mariposa Monarca
+zi6701003_25cw	Área de Protección de Flora y Fauna Nevado de Toluca
+zi6105144_25cw	Reserva de la Biosfera Barranca de Metztitlán
+zi6325069_25cw	Parque Nacional El Chico
+zi6304007_25cw	Parque Nacional Los Mármoles
+zi6106160_25cw	Reserva de la Biosfera Sierra Gorda de Guanajuato
+zi6323059_25cw	Parque Nacional El Veladero
+zi6303004_25cw	Parque Nacional Grutas de Cacahuamilpa
+zi6103137_25cw	Reserva de la Biosfera Sierra de Huautla
+zi6302002_25cw	Parque Nacional Iztaccíhuatl-Popocatépetl
+zi6318031_25cw	Parque Nacional La Montaña Malinche o Matlalcuéyatl
+zi6703153_25cw	Área de Protección de Flora y Fauna Cienegas del Lerma
+zi6306011_25cw	Parque Nacional Cumbres del Ajusco
+zi6301001_25cw	Parque Nacional Desierto de los Leones
+zi6305009_25cw	Parque Nacional Insurgente Miguel Hidalgo y Costilla
