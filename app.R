@@ -32,7 +32,7 @@ names(buffer_list) <- tools::file_path_sans_ext(basename(buffer_files))
 col_pal <- brewer.pal(4, "RdYlGn")
 
 ui <- navbarPage(
-  title = "IIE",  
+  title = "Integridad ecosistémica",  
   
   # ----- HEADER -----
   header = tagList(
@@ -41,16 +41,16 @@ ui <- navbarPage(
         /* ===== HEADER STYLES ===== */
         .custom-title {
           background-color: white;
-          color: #6F7271;
-          padding: 10px 20px;
-          border-bottom: 5px solid #691C32;
+          color: #03697F;
+          padding: 5px 5px;
+          border-bottom: 5px solid #03697F;
           font-size: 24px;
           display: flex;
           align-items: center;
-          gap: 15px;
+          gap: 5px;
           margin-bottom: 20px;
         }
-        .custom-title img { height: 40px; }
+        .custom-title img { height: 70px; }
 
         /* ===== TABLE STYLES ===== */
         .table-container {
@@ -64,7 +64,7 @@ ui <- navbarPage(
         table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 14px;
+          font-size: 16px;
           min-width: 800px;
         }
         th, td {
@@ -106,16 +106,42 @@ ui <- navbarPage(
         /* ===== MARGIN ===== */
         .tab-content {
           margin-left: 60px;
-          margin-right: 100px;
+          margin-right: 60px;
           margin-bottom: 60px;
+        }
+        
+        /* ===== BASE TEXT ===== */
+        body {
+          font-size: 18px;
+          font-family: 'Cronos Pro';
+        }
+        .custom-heading {
+          font-size: 22px;
+          font-weight: bold;
+        }
+        
+        /* ===== FOOTER ===== */
+        .custom-footer {
+          background-color: white;
+          color: #00896E;
+          padding: 10px 20px;
+          border-top: 5px solid #00896E;
+          font-size: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          margin-top: 40px;
+        }
+        .custom-footer img {
+          height: 70px;
         }
       ")      
     )
     ),
     
     div(class = "custom-title",
-        tags$img(src = "logo_conabio.png", alt = "Logo"),
-        "Integridad ecosistémica"
+        tags$img(src = "logos_cosmos.png", alt = "Logo")
     )
   ),
   
@@ -143,7 +169,7 @@ ui <- navbarPage(
                fluidRow(
                  column(
                    width = 4,
-                   h4("% de IE alta"),
+                   h4("% de IE alta", class = "custom-heading"),
                    fluidRow(
                      column(
                        width = 12,
@@ -160,28 +186,30 @@ ui <- navbarPage(
                  ),
                  column(
                    width = 8,
-                   h4("Mapa"),
+                   h4("Mapa", class = "custom-heading"),
                    leafletOutput("map", height = "400px")
                  )
                ),
                fluidRow(
                  column(
                    width = 12,
-                   h4("Comparación ANP vs Zona de influencia"),
+                   h4("Comparación ANP vs Zona de influencia", 
+                      class = "custom-heading"),
                    plotOutput("barplot_binary", height = "300px")
                  )
                ),
                fluidRow(
                  column(
                    width = 12,
-                   h4("IE a través del tiempo"),
+                   h4("IE a través del tiempo",
+                      class = "custom-heading"),
                    plotOutput("ie_timeseries", height = "300px")
                  )
                ),
                fluidRow(
                  column(
                    width = 12,
-                   h4("Efectividad"),
+                   h4("Efectividad", class = "custom-heading"),
                    plotOutput("ie_timeseries_efectividad", height = "300px"),
                    markdown("La efectividad es el resultado de dividir el % de
                             IE alta de la ANP entre el de la zona de influencia.")
@@ -202,7 +230,7 @@ ui <- navbarPage(
           width = 12,
           tags$div(
             class = "card p-3 shadow-sm mb-4",
-            tags$h4("IIE", class = "text-dark"),
+            tags$h4("Integridad ecosistémica", class = "custom-heading"),
             markdown("El Índice de Integridad ecosistémica (IIE) se estima a partir 
             de un modelo XGBoost, que considera como variables predictoras las 
             zonas de vida de Holdridge y la elevación, como factores de las 
@@ -224,7 +252,7 @@ ui <- navbarPage(
           12,
           div(
             class = "card p-3 shadow-sm mb-4",
-            tags$h4("Clasificación del IIE", class = "text-dark"),
+            tags$h4("Clasificación del IIE", class = "custom-heading"),
             
             # Table
             div(class = "table-container",
@@ -267,7 +295,7 @@ ui <- navbarPage(
           width = 12,
           tags$div(
             class = "card p-3 shadow-sm mb-4",
-            tags$h4("Análisis", class = "text-dark"),
+            tags$h4("Análisis", class = "custom-heading"),
             markdown("- Se toma como indicador de qué tan bien se encuentra un área 
                       al porcentaje de área con IE alta."),
             markdown("- La distribución de las cuatro categorías de IIE
@@ -290,6 +318,14 @@ ui <- navbarPage(
         )
       )
     )
+  ),
+  # ----- FOOTER -----
+  footer = tags$footer(
+    class = "custom-footer",
+    div(
+      class = "footer-content",
+      tags$img(src = "logos_conabio.png", alt = "Logo")
+      )
   )
 )
 
@@ -563,7 +599,7 @@ server <- function(input, output, session) {
       labs(x = NULL, y = NULL) +
       guides(fill="none") +
       scale_y_continuous(labels = scales::percent_format()) +
-      theme_classic(base_size = 15)
+      theme_classic(base_size = 18,)
     
     
     df_diff <- df_plot %>%
@@ -582,11 +618,11 @@ server <- function(input, output, session) {
                                    "d. IE alta" = col_pal[4])) +
       geom_hline(yintercept = 0, color = "black") +
       labs(x = "IE",
-           y = "Diferencia (ANP - Zona de influencia)") +
+           y = "ANP - Zona de influencia") +
       scale_y_continuous(labels = scales::percent_format()) +
       scale_x_discrete(name = NULL, labels = NULL) +
       coord_flip() +
-      theme_classic(base_size = 15)
+      theme_classic(base_size = 18)
     
     grid.arrange(plt_pct_stacked, plt_diff, ncol = 2)
   })
@@ -608,7 +644,7 @@ server <- function(input, output, session) {
                          labels = scales::percent_format()) +
       guides(color="none") +
       labs(x = NULL, y = NULL) +
-      theme_classic(base_size = 15)
+      theme_classic(base_size = 18)
   })
   
   # Line plot of efectivity by year and from ANP region
@@ -629,7 +665,7 @@ server <- function(input, output, session) {
       geom_point(color="blue") +
       labs(x = NULL, y = "Efectividad") +
       geom_hline(yintercept=1, linetype="dashed", color = "red") +
-      theme_classic(base_size = 15)
+      theme_classic(base_size = 18)
   })
   
   # % IE alta ANP
@@ -645,7 +681,7 @@ server <- function(input, output, session) {
     value_box(
       value = tags$p(paste0(round(value,4)*100,"%"), 
                      style = "font-size: 500%;"),
-      title = "ANP",
+      title = tags$p("ANP", style = "font-size: 18px;"),
       theme = value_box_theme(fg = "#1A9641")
     )
   })
@@ -662,8 +698,8 @@ server <- function(input, output, session) {
     
     value_box(
       value = tags$p(paste0(round(value,4)*100,"%"), 
-                     style = "font-size: 200%;"),
-      title = "Zona de influencia",
+                     style = "font-size: 300%;"),
+      title = tags$p("Zona de influencia", style = "font-size: 18px;"),
       theme = value_box_theme(fg = "#1A9641")
     )
   })

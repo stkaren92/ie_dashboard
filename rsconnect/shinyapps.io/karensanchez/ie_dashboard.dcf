@@ -5,9 +5,9 @@ account: karensanchez
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 14802160
-bundleId: 11141867
+bundleId: 11148111
 url: https://karensanchez.shinyapps.io/ie_dashboard/
 version: 1
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: .RData|.RDataTmp|plots.R|visualizations.R|plots
+ignoredFiles: .RData|.RDataTmp|plots.R|visualizations.R|www/logo_conabio.png|plots
