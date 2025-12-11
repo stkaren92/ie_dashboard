@@ -1,12 +1,12 @@
-name: ie_dashboard
-title: ie_dashboard
+name: iie_anps
+title: iie_anps
 username: karensanchez
 account: karensanchez
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
-appId: 14802160
-bundleId: 11191025
-url: https://karensanchez.shinyapps.io/ie_dashboard/
+appId: 16185441
+bundleId: 11242717
+url: https://karensanchez.shinyapps.io/iie_anps/
 version: 1
 asMultiple: FALSE
 asStatic: FALSE

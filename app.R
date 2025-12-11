@@ -29,6 +29,23 @@ buffer_files <- list.files(buffer_folder, pattern = "\\.shp$", full.names = TRUE
 buffer_list <- lapply(buffer_files, vect)
 names(buffer_list) <- tools::file_path_sans_ext(basename(buffer_files))
 
+
+v_norte <- c("Cañón de Santa Elena",
+             "Ocampo",
+             "Maderas del Carmen",
+             "C.A.D.N.R. 004 Don Martín")
+v_centro <- c("Sierra del Abra Tanchipa",
+              "Sierra Gorda",
+              "Z.P.F.V. la Cuenca Hidrográfica del Río Necaxa",
+              "Pico de Orizaba",
+              "Cofre de Perote o Nauhcampatépetl")
+v_sur <- c("Los Tuxtlas",
+           "Pantanos de Centla",
+           "Cañón del Usumacinta")
+myt_anps <- c(v_norte, v_centro, v_sur)
+anp_file <- anp_file[anp_file$NOMBRE %in% myt_anps |
+                       anp_file$NOMBRE %in% cosmos_anps$ANP_name]
+
 col_pal <- brewer.pal(4, "RdYlGn")
 
 ui <- navbarPage(
@@ -153,14 +170,22 @@ ui <- navbarPage(
              # Left column: controls (replaces sidebarPanel)
              column(
                width = 3,
-               checkboxInput("cosmos", "Filtrar COSMOS", value = TRUE),
+               # checkboxInput("cosmos", "Filtrar COSMOS", value = TRUE),
+               selectizeInput('filtrar_anps', "Filtrar ANPs por proyecto",
+                              choices = c("CoSMoS",
+                                          "Sierra y Mar",
+                                          "Total"),
+                              selected = "Total"),
                selectizeInput('anp', "Seleccionar ANP", choices = NULL),
                selectizeInput('ie_categories', "Seleccionar mapa", 
-                              choices = c("IE con 4 categorías", "IE con 16 categorías")),
+                              choices = c("IE con 4 categorías", 
+                                          "IE con 16 categorías")),
                sliderInput("year", "Seleccionar año", 
                            min = 2017, max = 2023, value = 2017,
                            step = 3,
-                           animate = animationOptions(interval = 3000))
+                           animate = animationOptions(interval = 3000)),
+               tags$a("Descargar ficha en PDF", 
+                      href="FICHA IE ANP COSMOS Mariposa FINAL.pdf") 
              ),
              
              # Right column: main visual outputs
@@ -168,7 +193,7 @@ ui <- navbarPage(
                width = 9,
                fluidRow(
                  column(
-                   width = 4,
+                   width = 3,
                    h4("% de IE alta", class = "custom-heading"),
                    fluidRow(
                      column(
@@ -185,9 +210,9 @@ ui <- navbarPage(
                    )
                  ),
                  column(
-                   width = 8,
+                   width = 9,
                    h4("Mapa", class = "custom-heading"),
-                   leafletOutput("map", height = "400px")
+                   leafletOutput("map", height = "300px")
                  )
                ),
                fluidRow(
@@ -261,7 +286,7 @@ ui <- navbarPage(
                   <thead>
                     <tr>
                       <th></th>
-                      <th>IIE (19 categorías)</th>
+                      <th>IIE (16 categorías)</th>
                       <th>IIE (4 Categorías)</th>
                       <th>Descripción</th>
                     </tr>
@@ -333,14 +358,28 @@ ui <- navbarPage(
 # Define server
 server <- function(input, output, session) {
   
+  # # Returns list of ANPs' names
+  # anp_names_list <- reactive({
+  #   if(input$cosmos==TRUE){
+  #     anp_names_list <- subset(anp_file, 
+  #                              anp_file$NOMBRE %in% cosmos_anps$ANP_name)$NOMBRE
+  #   }else{
+  #     anp_names_list <- anp_file$NOMBRE
+  #   }
+  #   return(anp_names_list)
+  # })
+  
   # Returns list of ANPs' names
   anp_names_list <- reactive({
-    if(input$cosmos==TRUE){
+    if(input$filtrar_anps=="CoSMoS"){
       anp_names_list <- subset(anp_file, 
                                anp_file$NOMBRE %in% cosmos_anps$ANP_name)$NOMBRE
+    }else if(input$filtrar_anps=="Sierra y Mar"){
+      anp_names_list <- subset(anp_file, 
+                               anp_file$NOMBRE %in% myt_anps)$NOMBRE
     }else{
       anp_names_list <- anp_file$NOMBRE
-    }
+      }
     return(anp_names_list)
   })
   
@@ -348,8 +387,7 @@ server <- function(input, output, session) {
   observeEvent(anp_names_list(),{
     updateSelectizeInput(session, 
                          inputId = "anp",
-                         choices = sort(anp_names_list()),
-                         selected = 'Barranca de Metztitlán'
+                         choices = sort(anp_names_list())
     )
   })
   
@@ -631,7 +669,7 @@ server <- function(input, output, session) {
   output$ie_timeseries <- renderPlot({
     df_timeseries <- df_timeseries()
     
-    ggplot(df_timeseries$df_ie_years_anp, 
+    ggplot(df_timeseries$df_ie_years_anp,
            aes(x = as.numeric(year), y = pct, group = ie_4cat)) +
       geom_line(aes(color=ie_4cat)) +
       geom_point(aes(color=ie_4cat)) +
@@ -642,9 +680,32 @@ server <- function(input, output, session) {
                                     "d. IE alta" = col_pal[4])) +
       scale_y_continuous(limits = c(0, 1),
                          labels = scales::percent_format()) +
+      scale_x_continuous(breaks = c(2017, 2020, 2023)) +
       guides(color="none") +
       labs(x = NULL, y = NULL) +
       theme_classic(base_size = 18)
+    
+    
+    # ggplot(df_timeseries$df_ie_years_total, 
+    #        aes(x = as.numeric(year), y = pct, 
+    #            shape = location,
+    #            group = interaction(ie_4cat,location))) +
+    #   geom_line(aes(color=ie_4cat, linewidth = location)) +
+    #   scale_color_manual("IE",
+    #                      values = c("a. IE muy baja" = col_pal[1],
+    #                                 "b. IE baja" = col_pal[2],
+    #                                 "c. IE media" = col_pal[3],
+    #                                 "d. IE alta" = col_pal[4])) +
+    #   scale_y_continuous(#limits = c(0, 1),
+    #                      labels = scales::percent_format()) +
+    #   scale_x_continuous(breaks = c(2017, 2020, 2023)) +
+    #   scale_linewidth_manual("",
+    #                          values = c("anp" = 1.3, "periphery" = 0.4),
+    #                          labels = c("ANP", "Zona de influencia")) +
+    #   guides(color="none") +
+    #   labs(x = NULL, y = NULL) +
+    #   theme_classic(base_size = 18) +
+    #   theme(legend.position = "top")
   })
   
   # Line plot of efectivity by year and from ANP region
@@ -664,6 +725,7 @@ server <- function(input, output, session) {
       geom_line(color="blue") +
       geom_point(color="blue") +
       labs(x = NULL, y = "Efectividad") +
+      scale_x_continuous(breaks = c(2017, 2020, 2023)) +
       geom_hline(yintercept=1, linetype="dashed", color = "red") +
       theme_classic(base_size = 18)
   })

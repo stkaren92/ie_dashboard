@@ -156,9 +156,9 @@ ggplot(df_plot_anp,
         axis.ticks.y=element_blank(),
         strip.background = element_blank(),
         panel.spacing.x = unit(0.48, "cm"))
-ggsave(paste0("plots/distribucion_",save_name,".jpg"), 
-       width = 23, 
-       height = length(anps_plot)*1.2, units = "cm")
+# ggsave(paste0("plots/distribucion_",save_name,".jpg"), 
+#        width = 23, 
+#        height = length(anps_plot)*1.2, units = "cm")
 
 #### Efectividad plot ####
 df_efectividad_anp <- df_efectividad %>% 
@@ -183,10 +183,9 @@ ggplot(df_efectividad_anp,
   labs(x = NULL, y = NULL) +
   coord_flip() +
   theme_classic(base_size = 14)
-ggsave(paste0("plots/efectividad_",save_name,".jpg"), 
-       width = 23, 
-       height = length(anps_plot)*1.2, units = "cm")
-
+# ggsave(paste0("plots/efectividad_",save_name,".jpg"), 
+#        width = 23, 
+#        height = length(anps_plot)*1.2, units = "cm")
 
 
 # df_aux <- df_plot_anp %>% 
