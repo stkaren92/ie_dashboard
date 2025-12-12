@@ -9,10 +9,61 @@ format:
     colorlinks: true
 editor: visual
 params:
-  anp_selected: "Mariposa Monarca"
+  anp_name: "Mariposa Monarca"
 ---
 
-# Diagnóstico de Integridad Ecosistémica
+```{r define-colorize, echo=FALSE}
+color_ie_alta <- function(ie_alta_anp) {
+  if (ie_alta_anp <= 25) {
+    estado <- "Conservación baja"
+    color <- gsub("#", "", col[1])
+  } else if (ie_alta_anp <= 50) {
+    estado <- "Conservación media"
+    color <- gsub("#", "", col[2])
+  } else if (ie_alta_anp <= 75) {
+    estado <- "Conservación alta"
+    color <- gsub("#", "", col[3])
+  } else {
+    estado <- "Conservación muy alta"
+    color <- gsub("#", "", col[4])
+  }
+  sprintf("\\textcolor[HTML]{%s}{%s}", color, estado)
+}
+
+color_presion <- function(presion_anp) {
+  if (presion_anp <= 25) {
+    estado <- "Presión baja"
+    color <- gsub("#", "", col[4])
+  } else if (presion_anp <= 50) {
+    estado <- "Presión moderada"
+    color <- gsub("#", "", col[3])
+  } else if (presion_anp <= 75) {
+    estado <- "Presión alta"
+    color <- gsub("#", "", col[2])
+  } else {
+    estado <- "Presión muy alta"
+    color <- gsub("#", "", col[1])
+  }
+  sprintf("\\textcolor[HTML]{%s}{%s}", color, estado)
+}
+
+color_efectividad <- function(efectividad_anp) {
+  if (efectividad_anp <= 1) {
+    estado <- "Sin eficacia"
+    color <- gsub("#", "", col[1])
+  } else if (efectividad_anp <= 2) {
+    estado <- "Eficacia parcial"
+    color <- gsub("#", "", col[2])
+  } else if (efectividad_anp <= 3) {
+    estado <- "Eficacia alta"
+    color <- gsub("#", "", col[3])
+  } else {
+    estado <- "Eficacia sobresaliente"
+    color <- gsub("#", "", col[4])
+  }
+  sprintf("\\textcolor[HTML]{%s}{%s}", color, estado)
+}
+```
 
 ```{r load-data, echo=FALSE, message=FALSE, results='hide', warning = FALSE}
 
@@ -26,41 +77,43 @@ library(ggpattern)
 library(knitr)
 library(kableExtra)
 
-anp_selected <- params$anp_selected
+anp_name <- params$anp_name
 
+# Input
 buffer_folder <- "/Users/kasanchez/Documents/ie_dashboard/data/Zonas de Influencia_Vectores/"
-anp <- vect('/Users/kasanchez/Documents/ie_dashboard/data/anp/186ANP_ITRF08_19012023.shp')
+anp_shp <- vect('/Users/kasanchez/Documents/ie_dashboard/data/anp/186ANP_ITRF08_19012023.shp')
 df_cosmos_anps <- read.csv('/Users/kasanchez/Documents/ie_dashboard/data/anp_cosmos/cosmos_anps.csv')
-complejo_selected <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp_selected,"Complejo"]
+col <- brewer.pal(4, "RdYlGn")
 
+complejo_name <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp_name,"Complejo"]
+anp_shortname <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp_name,"ANP_shortname"]
 
+# Load buffer shapefiles on a named list
 buffer_files <- list.files(buffer_folder, pattern = "\\.shp$", full.names = TRUE)
 buffer_list <- lapply(buffer_files, vect)
 names(buffer_list) <- tools::file_path_sans_ext(basename(buffer_files))
 
-col <- brewer.pal(4, "RdYlGn")
-
-df_cosmos_anps <- df_cosmos_anps %>% 
-  filter(Complejo == complejo_selected)
-
-df_total <- data.frame()
-for(anp_name in df_cosmos_anps$ANP_name) {
-  print(anp_name)
+# Iterate through ANPs and years
+# to get the IE values of each pixel of the ANP
+# and its periphery
+df_ie_total <- data.frame()
+for(anp in df_cosmos_anps$ANP_name) {
   for(y in c(2020,2023)){
+    
+    # Get ANP IE raster
     ie <- rast(paste0('/Users/kasanchez/Documents/ie_dashboard/data/ie/ie_xgb_',y,'.tif'))
-    anp_selected <- subset(anp, anp$NOMBRE == anp_name)
-    anp_selected <- project(anp_selected, crs(ie))
+    ie_anp <- crop(ie, 
+                   project(subset(anp_shp, anp_shp$NOMBRE == anp), crs(ie)), 
+                   mask=TRUE)
     
-    ie_anp <- crop(ie, anp_selected, mask=TRUE)
-    
-    anp_selected_buffer <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp_name, 
-                                            "Buffer_file"]
-      
+    # Get periphery IE raster
+    anp_selected_buffer <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp, 
+                                          "Buffer_file"]
     periphery <- buffer_list[[anp_selected_buffer]]
     periphery <- project(periphery, crs(ie))
-      
     ie_periphery <- crop(ie, periphery, mask=TRUE)
     
+    # Transform ANP and periphery rasters to dataframe
     df_ie <- rbind(data.frame(ie = as.data.frame(ie_anp, 
                                                  xy = FALSE)$prediction, 
                               location = 'anp'),
@@ -68,37 +121,40 @@ for(anp_name in df_cosmos_anps$ANP_name) {
                                                  xy = FALSE)$prediction, 
                               location = 'periphery'))
     
+    # Set IE categorical values
     df_ie <- df_ie %>% 
       mutate(ie_4cat = ifelse(ie <= 4, "IE alta",
                               ifelse(ie <= 9, "IE media",
                                      ifelse(ie <= 13, "IE baja", "IE muy baja"))))
-    df_pct <- df_ie %>% 
-      group_by(location,ie_4cat) %>%
-      summarise(pct = n()) %>%
-      ungroup() %>% 
-      group_by(location) %>%
-      mutate(pct = pct/sum(pct))
     
-    df_diff <- df_pct %>%
-      select(location, ie_4cat, pct) %>%
-      tidyr::pivot_wider(names_from = location, values_from = pct) %>%
-      replace(is.na(.), 0)
+    df_ie$anp_name <- anp
+    df_ie$year <- y
     
-    df_diff$anp_name <- anp_name
-    df_diff$year <- y
-    
-    df_total <- rbind(df_total, df_diff)
+    df_ie_total <- rbind(df_ie_total, df_ie)
   }
 }
-
-df_total <- df_total %>% 
+# Join ANP short name
+df_ie_total <- df_ie_total %>% 
   left_join(df_cosmos_anps %>% 
-              select(ANP_name,ANP_shortname),
+              select(ANP_name,ANP_shortname,Complejo),
             by=c("anp_name"="ANP_name"))
 
-df_dist <- df_total %>% 
-  pivot_longer(cols=c(anp,periphery), 
-               names_to = "location", values_to = "pct") %>% 
+#### By ANP ####
+# Get the IE % distribution
+df_ie_pct <- df_ie_total %>% 
+  count(Complejo,ANP_shortname,anp_name, 
+        year, 
+        location, 
+        ie_4cat, name = "pct") %>% 
+  group_by(Complejo, ANP_shortname, anp_name, 
+           year, 
+           location) %>% 
+  mutate(pct = pct / sum(pct)) %>% 
+  ungroup()
+
+# Get IE % distribution dataframe of selected ANPs
+df_dist <- df_ie_pct %>% 
+  filter(Complejo == complejo_name) %>% 
   mutate(year = factor(year,
                        levels = c("2023","2020")),
          ie_4cat = factor(ie_4cat,
@@ -109,7 +165,11 @@ df_dist <- df_total %>%
          location_name = ifelse(location == "anp",
                                 "ANP", "Zona de influencia"))
 
-df_efectividad <- df_total %>% 
+# Get effectivity dataframe of selected ANPs
+df_efectividad <- df_ie_pct %>%
+  filter(Complejo == complejo_name) %>% 
+  tidyr::pivot_wider(names_from = location, values_from = pct) %>%
+  replace(is.na(.), 0) %>% 
   filter(ie_4cat == "IE alta") %>% 
   mutate(efectividad = anp/periphery)
 
@@ -120,13 +180,37 @@ df_aux <- df_dist %>%
            year == "2023")
 df_dist <- df_dist %>% 
   mutate(ANP_shortname = factor(ANP_shortname,
-                           levels = levels(fct_reorder(df_aux$ANP_shortname, 
-                                                       desc(df_aux$pct)))))
+                                levels = levels(fct_reorder(df_aux$ANP_shortname, 
+                                                            desc(df_aux$pct)))))
 df_efectividad <- df_efectividad %>% 
   mutate(ANP_shortname = factor(ANP_shortname,
-                           levels = levels(fct_reorder(df_aux$ANP_shortname, 
-                                                       (df_aux$pct)))))
+                                levels = levels(fct_reorder(df_aux$ANP_shortname, 
+                                                            (df_aux$pct)))))
+
+
+#### By complejo ####
+# Get IE % distribution dataframe by Complejo
+df_dist_com <- df_ie_total %>% 
+  count(Complejo,
+        year, 
+        location, 
+        ie_4cat, name = "pct") %>% 
+  group_by(Complejo,
+           year, 
+           location) %>% 
+  mutate(pct = pct / sum(pct)) %>% 
+  ungroup()
+
+# Get effectivity dataframe of selected ANPs
+df_efectividad_com <- df_dist_com %>%
+  tidyr::pivot_wider(names_from = location, values_from = pct) %>%
+  replace(is.na(.), 0) %>% 
+  filter(ie_4cat == "IE alta") %>% 
+  mutate(efectividad = anp/periphery)
+
 ```
+
+# Diagnóstico de Integridad Ecosistémica de la ANP `r anp_name` y su complejo
 
 ```{r distribution-plot, echo=FALSE, message=FALSE, results='hide'}
 
@@ -162,18 +246,38 @@ ggplot(df_dist,
         legend.key.size = unit(0.2, "cm"))
 ```
 
-### Estado de la Integridad Ecosistémica
+### Estado de la Integridad Ecosistémica del ANP
 
-```{r IEalta-table, echo=FALSE}
+```{r IEalta-get, echo=FALSE}
 
 table_ie_alta <- df_dist %>% 
   filter(ie_4cat == "IE alta" & location == "anp") %>% 
   select(ANP_shortname, year, pct) %>% 
-  mutate(pct = round(pct*100,1)) %>% 
+  mutate(pct = round(pct*100,1))
+
+ie_alta_anp <- table_ie_alta %>% 
+  filter(ANP_shortname == anp_shortname &
+           year == 2023) %>% 
+  pull(pct)
+
+table_ie_alta <- table_ie_alta %>% 
   pivot_wider(names_from = "ANP_shortname",
               values_from = "pct") %>% 
   rename("año" = "year")
 
+
+ie_alta_com <- df_dist_com %>% 
+  filter(ie_4cat == "IE alta" & location == "anp" &
+           Complejo == complejo_name & year == 2023) %>%
+  mutate(pct = round(pct*100,1)) %>% 
+  pull(pct)
+
+
+```
+
+$EIE_{2023}$ de `r anp_shortname`: `r color_ie_alta(ie_alta_anp)`. Complejo: `r color_ie_alta(ie_alta_com)`.
+
+```{r IEalta-table, echo=FALSE}
 table_ie_alta %>%
   mutate(across(names(table_ie_alta)[-1],
                 ~ case_when(
@@ -184,21 +288,39 @@ table_ie_alta %>%
                 ))) %>%
   kable(escape = F, align = "c", 
         booktabs = T, format = "latex",
-        caption = "IE alta") %>% 
+        caption = "Estado de la Integridad Ecosistémica") %>% 
   kable_styling(position = "center", latex_options = c("hold_position"))
 ```
 
-### Presión en la Zona de Influencia
+### Presión de la Zona de Influencia
 
-```{r pressure-table, echo=FALSE}
+```{r pressure-get, echo=FALSE}
 table_presion <- df_dist %>% 
   filter(ie_4cat == "IE alta" & location == "periphery") %>% 
   select(ANP_shortname, year, pct) %>% 
-  mutate(pct = round(100-pct*100,1)) %>% 
+  mutate(pct = round(100-pct*100,1))
+
+presion_anp <- table_presion %>% 
+  filter(ANP_shortname == anp_shortname &
+           year == 2023) %>% 
+  pull(pct)
+
+table_presion <- table_presion %>% 
   pivot_wider(names_from = "ANP_shortname",
               values_from = "pct") %>% 
   rename("año" = "year")
 
+
+presion_com <- df_dist_com %>% 
+  filter(ie_4cat == "IE alta" & location == "periphery" &
+           Complejo == complejo_name & year == 2023) %>% 
+  mutate(pct = round(100-pct*100,1)) %>% 
+  pull(pct)
+```
+
+$P_{2023}$ de `r anp_shortname`: `r color_presion(presion_anp)`. Complejo: `r color_presion(presion_com)`.
+
+```{r pressure-table, echo=FALSE}
 table_presion %>%
   mutate(across(names(table_presion)[-1],
                 ~ case_when(
@@ -213,7 +335,7 @@ table_presion %>%
   kable_styling(position = "center", latex_options = c("hold_position"))
 ```
 
-### Eficacia de la Conservación de la Integridad Ecosistémica
+### Eficacia en la protección de la Integridad Ecosistémica del ANP
 
 ```{r effectivity-plot, echo=FALSE, message=FALSE, results='hide'}
 
@@ -231,15 +353,30 @@ ggplot(df_efectividad,
   theme_classic()
 ```
 
-```{r effectivity-table, echo=FALSE}
-
+```{r effectivity-get, echo=FALSE}
 table_efectividad <- df_efectividad %>% 
   select(ANP_shortname, year, efectividad) %>% 
-  mutate(efectividad = round(efectividad,2)) %>% 
+  mutate(efectividad = round(efectividad,2))
+
+efectividad_anp <- table_efectividad %>% 
+  filter(ANP_shortname == anp_shortname &
+           year == 2023) %>% 
+  pull(efectividad)
+
+table_efectividad <- table_efectividad %>% 
   pivot_wider(names_from = "ANP_shortname",
               values_from = "efectividad") %>% 
   rename("año" = "year")
 
+efectividad_com <- df_efectividad_com %>% 
+  filter(Complejo == complejo_name & year == 2023) %>% 
+  mutate(efectividad = round(efectividad,2)) %>% 
+  pull(efectividad)
+```
+
+$Ef_{2023}$ de `r anp_shortname`: `r color_efectividad(efectividad_anp)`. Complejo: `r color_efectividad(efectividad_com)`.
+
+```{r effectivity-table, echo=FALSE}
 table_efectividad %>%
   mutate(across(names(table_efectividad)[-1],
                 ~ case_when(
@@ -250,11 +387,12 @@ table_efectividad %>%
                 ))) %>%
   kable(escape = F, align = "c", 
         booktabs = T, format = "latex",
-        caption = "Efectividad") %>% 
+        caption = "Eficacia") %>% 
   kable_styling(position = "center", latex_options = c("hold_position"))
+
 ```
 
-## **SÍNTESIS**
+## SÍNTESIS
 
 ```{r anp-color-table, echo=FALSE}
 
@@ -264,7 +402,7 @@ table_ie_alta_change <- df_dist %>%
   select(ANP_shortname, year, pct) %>% 
   pivot_wider(names_from = "year",
               values_from = "pct") %>% 
-  mutate(diff_ie_alta = round(`2023` - `2020`),
+  mutate(diff_ie_alta = `2023` - `2020`,
          diff_ie_alta_symbol = case_when(
            diff_ie_alta > 0 ~ "↑",
            diff_ie_alta < 0 ~ "↓",
@@ -277,10 +415,29 @@ table_ie_alta_change <- df_dist %>%
            `2023` > 75 ~ "muyalta",
          ))
 
+table_presion_change <- df_dist %>% 
+  filter(ie_4cat == "IE alta" & location == "periphery") %>% 
+  mutate(pct = round(pct*100,1)) %>% 
+  select(ANP_shortname, year, pct) %>% 
+  pivot_wider(names_from = "year",
+              values_from = "pct") %>% 
+  mutate(diff_pres = `2023` - `2020`,
+         diff_pres_symbol = case_when(
+           diff_pres > 0 ~ "↑",
+           diff_pres < 0 ~ "↓",
+           diff_pres == 0 ~ "="
+         ),
+         diff_pres_color = case_when(
+           `2023` <= 25 ~ "muyalta",
+           `2023` <= 50 ~ "alta",
+           `2023` <= 75 ~ "media",
+           `2023` > 75 ~ "baja",
+         ))
+
 
 table_efectividad_change <- df_efectividad %>% 
   select(ANP_shortname, year, efectividad) %>% 
-  mutate(efectividad = round(efectividad,1)) %>% 
+  mutate(efectividad = round(efectividad,2)) %>% 
   pivot_wider(names_from = "year",
               values_from = "efectividad") %>%
   mutate(diff_ef = `2023` - `2020`,
@@ -298,9 +455,12 @@ table_efectividad_change <- df_efectividad %>%
 
 table_change <- table_ie_alta_change %>% 
   select(ANP_shortname, diff_ie_alta_symbol, diff_ie_alta_color) %>% 
+  left_join(table_presion_change %>% 
+              select(ANP_shortname, diff_pres_symbol, diff_pres_color),
+            by="ANP_shortname") %>% 
   left_join(table_efectividad_change %>% 
               select(ANP_shortname, diff_ef_symbol, diff_ef_color),
-            by="ANP_shortname")
+            by="ANP_shortname") 
 
 colores <- c(
   "muyalta"  = col[4],
@@ -310,10 +470,11 @@ colores <- c(
 )
 
 names(table_change) <- c("ANP", "Estado IE", "IEColor",
+                         "Estado Presion", "PresColor",
                          "Estado EfIE", "EfColor")
 
 table_change %>%
-  select(ANP, `Estado IE`, `Estado EfIE`) %>% 
+  select(ANP, `Estado IE`, `Estado Presion`, `Estado EfIE`) %>% 
   kable(escape = FALSE, align = "c", format = "latex",
         booktabs = T) %>%
   kable_styling(position = "center", latex_options = c("hold_position")) %>% 
@@ -321,49 +482,54 @@ table_change %>%
                 pull(IEColor) %>%
                 purrr::map_chr(~ colores[.x])) %>%
   column_spec(3, background = table_change %>%
+                pull(PresColor) %>%
+                purrr::map_chr(~ colores[.x])) %>%
+  column_spec(4, background = table_change %>%
                 pull(EfColor) %>%
-                purrr::map_chr(~ colores[.x]))
+                purrr::map_chr(~ colores[.x])) 
 ```
 
-El estado general de la [RB Mariposa Monarca]{.underline} es de [Conservación alta,]{.underline} [Eficacia alta]{.underline} y [Presión muy alta.]{.underline} Esto significa que no hay un grado de preocupación alto en el ANP, pero sí se sugeriría alcanzar un estado de [Conservación muy alto]{.underline} y mantener el monitoreo del estado del ANP y de la ZI dado el estado depresión que presenta el ANP.
+El estado general de la `r anp_name` es de `r color_ie_alta(ie_alta_anp)`, `r color_presion(presion_anp)` y `r color_efectividad(efectividad_anp)`. \*\* AUTOMATIZAR \*\* Esto significa que no hay un grado de preocupación alto en el ANP, pero sí se sugeriría alcanzar un estado de [Conservación muy alto]{.underline} y mantener el monitoreo del estado del ANP y de la ZI dado el estado depresión que presenta el ANP.
 
-Dada esta condición en el ANP y la tendencia descrita entre el 2020 y 2023, es deseable que la [eficacia]{.underline} del ANP [revierta]{.underline} su tendencia y el estado de conservación de la IE [se mantenga o aumente]{.underline}. Las ANP del complejo presentan una eficacia [parcial]{.underline}, es decir [menor]{.underline} a la de la ANP focal, es decir que las acciones de la [RB Mariposa Monarca]{.underline} son [mejores]{.underline} que las del resto del complejo.
+\*\* AUTOMATIZAR \*\* Dada esta condición en el ANP y la tendencia descrita entre el 2020 y 2023, es deseable que la [eficacia]{.underline} del ANP [revierta]{.underline} su tendencia y el estado de conservación de la IE [se mantenga o aumente]{.underline}. Las ANP del complejo presentan una eficacia [parcial]{.underline}, es decir [menor]{.underline} a la de la ANP focal, es decir que las acciones de la [RB Mariposa Monarca]{.underline} son [mejores]{.underline} que las del resto del complejo.
 
 ## CONSIDERACIÓN IMPORTANTE
 
-Para comprender el estado de una ANP es importante siempre considerar todos los indicadores en conjunto tanto
+Para comprender el estado de una ANP es importante siempre considerar todos los indicadores en conjunto tanto el Estado de Integridad Ecosistémica y Eficacia del ANP como la Presión que sufre el ANP en su Zona de Influencia, y verificar el contexto y estado de las ANP aledañas.
 
-el Estado de Integridad Ecosistémica y Eficacia del ANP como la Presión que sufre el ANP en su ZI, y verificar el contexto y estado de las ANP aledañas.
+## DESCRIPCIÓN Y CÁLCULO DE INDICADORES
 
-### Descripción y cálculo del Estado de la Integridad Ecosistémica del ANP
+### Estado de la Integridad Ecosistémica del ANP
 
-El indicador del Estado de la Integridad Ecosistémica (EIE) en el ANP es calculado con el porcentaje del total del área que ocupa la clase alta ($IE_{alta}$), es decir:
+El indicador del Estado de la Integridad Ecosistémica Del ANP ($EIE$) es calculado con el porcentaje del total del área que ocupa la clase alta ($IE_{alta}$), es decir:
 
-$$EIE = \%IE_{alta}$$
+$$EIE = \%IE_{alta}(ANP)$$
 
-Para el año [2023]{.underline} este valor para el ANP fue de [71.8%]{.underline} y en el complejo fue de [48%.]{.underline} De acuerdo a las clases definidas con base en los criterios el estado en el ANP tiene un estado de [Conservación aceptable]{.underline} y un estado de [Degradación media]{.underline} en el complejo (Lista 1).
+Para el año [2023]{.underline} este valor para el ANP fue de `r ie_alta_anp`% y en el complejo fue de [48%.]{.underline} De acuerdo a las clases definidas con base en los criterios el estado en el ANP tiene un estado de `r color_ie_alta(ie_alta_anp)` y un estado de [Degradación media]{.underline} en el complejo.
 
-### Presión
+### Presión de la Zona de Influencia
 
-De forma recíproca, definimos la Presión (P) como el porcentaje del total del área que no ocupa la clase de integridad alta, es decir:
-
-$$
-P=100-\%IE{alta}
-$$
-
-La zona de influencia (ZI) de la clase IEalta nos puede indicar el grado de presión existente en la superficie de territorio alrdededor de la ANP, y está en función de la cantidad de la clase IEalta, si esta es baja en la ZI la presión es mayor. La ZI del ANP tiene un total de 23.82%de IE alta por lo que el monto de Presión es muy alta, de 76.2, ver Lista 2. En el 2020 el ANP tiene un EIE de 69.6% y en el 2023 71.8%, por lo tanto se detecta un incremento de la superficie de IEalta., es deseable que dicha tendencia se mantenga en aumento mediante las acciones de manejo realizadas en el ANP.
-
-### Eficacia en la protección de la Integridad Ecosistémica
-
-El valor de la eficacia en la protección de la IE (Ef~IE~) en las ANP, se calcula como el cociente del porcentaje de la clase $IE_{alta}$ dentro del ANP (IED~alta~) entre el porcentaje de la clase $IE_{alta}$ en el área de la zona de influencia (IEZI~alta~), es decir:
+Definimos la Presión ($P$) como el porcentaje del total del área que no tiene integridad alta en la Zona de Influencia (ZI), es decir:
 
 $$
-Ef_{IE}=\%IED/\%IEZI_{alta}
+P=100\%-\%IE_{alta}(ZI)
 $$
 
-Además de indicar la magnitud de protección de la IE, nos permite saber el contexto geográfico del ANP en cuanto a la presión existente fuera de ella. El valor de Ef~IE~ calculado para todas las ANP en el complejo es de [1.66]{.underline} y en el ANP en 2023 es de [3]{.underline} por lo que se considera que la eficacia es de clase: [parcial]{.underline} en el complejo y [alta]{.underline} en el ANP de acuerdo a los criterios definidos (Lista 3). Entre el 2020 y el 2023 se detectó un [decremento]{.underline} en la eficiencia del ANP, debido a que el valor cambió de [3.1]{.underline} a [3]{.underline}.
+Esto nos indica el grado de presión existente en la superficie de territorio alrededor de la ANP. Está en función del porcentaje de la clase $IE_{alta}$, si esta es baja en la ZI la presión es mayor.
 
-**Lista 1. Criterios y clases del Estado de conservación de la Integridad Ecosistémica**
+\*\* AUTOMATIZAR \*\* La ZI del ANP tiene un total de 23.82%de IE alta por lo que el monto de Presión es muy alta, de 76.2, ver Lista 2. En el 2020 el ANP tiene un EIE de 69.6% y en el 2023 71.8%, por lo tanto se detecta un incremento de la superficie de $IE_{alta}$, es deseable que dicha tendencia se mantenga en aumento mediante las acciones de manejo realizadas en el ANP.
+
+### Eficacia en la protección de la Integridad Ecosistémica del ANP
+
+El valor de la eficacia en la protección de la IE en la ANP ($Ef$) , se calcula como el cociente del porcentaje de la clase alta dentro del ANP ($\%IE_{alta}(ANP)$) entre el porcentaje de la clase alta en el área de la Zona de Influencia ($\%IE_{alta}(ZI)$), es decir:
+
+$$
+Ef=\frac{\%IE_{alta}(ANP)}{\%IE_{alta}(ZI)}
+$$
+
+Además de indicar la magnitud de protección de la IE, nos permite saber el contexto geográfico del ANP en cuanto a la presión existente fuera de ella.
+
+\*\* AUTOMATIZAR \*\* El valor de $Ef$ calculado para todas las ANP en el complejo es de [1.66]{.underline} y en el ANP en 2023 es de [3]{.underline} por lo que se considera que la eficacia es de clase: [parcial]{.underline} en el complejo y [alta]{.underline} en el ANP de acuerdo a los criterios definidos (Lista 3). Entre el 2020 y el 2023 se detectó un [decremento]{.underline} en la eficiencia del ANP, debido a que el valor cambió de [3.1]{.underline} a [3]{.underline}.
 
 ```{r IE-criteria-table, echo = FALSE}
 
@@ -391,7 +557,7 @@ df_cat %>%
     booktabs = TRUE,
     escape = FALSE,
     align = "l",
-    caption = "Criterios y clases del Estado de conservación de la Integridad Ecosistémica"
+    caption = "Criterios y clases del Estado de la Integridad Ecosistémica del ANP"
   ) %>%
   kable_styling(position = "center", latex_options = "hold_position")
 ```
@@ -422,7 +588,7 @@ df_cat %>%
     booktabs = TRUE,
     escape = FALSE,
     align = "l",
-    caption = "Criterios y clases de la Presión en la Zona de Influencia"
+    caption = "Criterios y clases de la Presión de la Zona de Influencia"
   ) %>%
   kable_styling(position = "center", latex_options = "hold_position")
 ```
@@ -453,12 +619,14 @@ df_cat %>%
     booktabs = TRUE,
     escape = FALSE,
     align = "l",
-    caption = "Criterios y clases de la Presión en la Zona de Influencia"
+    caption = "Criterios y clases de Eficacia en la protección de la Integridad Ecosistémica del ANP"
   ) %>%
   kable_styling(position = "center", latex_options = "hold_position")
 ```
 
 ## **DEFINICIONES Y MÉTODO**
+
+### **Integridad Ecosistémica**
 
 La Integridad Ecosistémica (IE) se refiere a qué tan completo, funcional o intacto está un ecosistema respecto a su estado natural (Wildlife Conservation Society 2020). La integridad más alta la alcanzan las áreas no afectadas de manera significativa por actividades humanas, las cuales son fundamentales para la conservación de la biodiversidad, pues es en ecosistemas con alta integridad que las especies tienen menor riesgo de extinción (Di Marco et al. 2019). Además, estas áreas contribuyen en mayor medida, respecto a áreas degradadas, a los servicios ecológicos, como la absorción de $CO_2$, el suministro de agua y protección de riesgos causados por el cambio climático (Watson et al. 2018; Martin and Watson 2016). Por lo tanto, es de gran importancia, medir y monitorear la IE para preservar áreas con alta integridad y restaurar áreas de baja integridad.
 
@@ -466,21 +634,21 @@ La Integridad Ecosistémica (IE) se refiere a qué tan completo, funcional o in
 
 El Índice de Integridad Ecosistémica (IIE) representa el grado de transformación de la *vegetación primaria* (vegetación antes de los grandes cambios antropogénicos), respecto a su situación actual (CONABIO, 2025).
 
-### **Método**
+### **Método del cálculo del Índice de Integridad Ecosistémica**
 
-El IIE se basa en la variable *hemerobia* cuya clasificación originalmente consta de 18 clases (Equihua et al 2018). Ésta fue actualizada dado los cambios en la nomenclatura de las clases de vegetación y cuerpos de agua de la Serie VII de INEGI, cuyo mapa es comparado con el de v*egetación primaria* para obtener el IIE.
+El IIE se basa en la variable *hemerobia*, cuya clasificación originalmente consta de 18 clases (Equihua et al 2018). Ésta fue actualizada dado los cambios en la nomenclatura de las clases de vegetación y cuerpos de agua de la Serie VII de INEGI, cuyo mapa es comparado con el de v*egetación primaria* para obtener el IIE.
 
-Para la mejor comprensión de los estados de IE y efectividad las 16 clases resultantes, se recategorizaron en 4: IE alta, IE media, IE baja, IE muy baja (CONABIO, 2025).
+Para la mejor comprensión de los estados de IE y efectividad las 16 clases resultantes, se recategorizaron en 4: $IE_{alta}$, $IE_{media}$, $IE_{baja}$, $IE_{muy baja}$ (CONABIO, 2025).
 
-La clase alta ($IE\_{alta}$) representa a la vegetación natural (primaria) remanente en el país representada por las clases 0 a la 4 de la *hemerobia*. Ésta es tomada como referencia tanto para describir el estado de la condición de la IE, como de la eficacia.
+La clase alta ($IE\_{alta}$) representa a la vegetación natural (primaria) remanente en el país representada por las clases 0 a la 4 de la *hemerobia*. Ésta es tomada como referencia para estimar los indicadores de estado, presión y eficacia.
 
 #### Modelo
 
-Para estimar el IIE de diferentes años, se usa un modelo *XGBoost* (refuerzo del gradiente extremo), el cual es un método de aprendizaje automático supervisado para clasificación, que mediante variables predictoras predice el valor del IIE para el año deseado.
+Para estimar el IIE de diferentes años, se usa un modelo *XGBoost* (refuerzo del gradiente extremo), el cual es un método de aprendizaje automático supervisado para clasificación, que mediante variables predictoras estima el valor del IIE para el año deseado.
 
 #### **Variables predictoras**
 
-Serie de Uso de Suelo y Vegetación (INEGI), Vegetación Primaria (INEGI), Cobertura forestal (MODIS, NASA LP DAAC), productividad primaria bruta (fotosíntesis), estructura de la vegetación (radar en Sentinel 2), elevación, zonas de vida de Holdridge). Resolución: 250x250m
+Cobertura forestal (MODIS, NASA LP DAAC), productividad primaria bruta (fotosíntesis), estructura de la vegetación (radar en Sentinel 2), elevación, zonas de vida de Holdridge). Resolución: 250x250m
 
 #### **Validación**
 
@@ -490,13 +658,15 @@ Experta (CONANP IE Fauna y CONANP-PIMBio), Fauna indicadora clave (SiPeCaM), Eva
 
 *“La eficacia es la capacidad de lograr el efecto que se desea o se espera*.”
 
-En este caso, lo entenderemos como la capacidad de realizar acciones de manejo, restauración y conservación en el ANP para lograr la conservación de la Integridad Ecosistémica en el ANP. Es calculada tomando como referencia el estado de la IE que tiene la zona de influencia (ZI), esta zona al no estar protegida se esperaría que tenga un estado de la IE menor que dentro de la ANP.
+En este caso, lo entenderemos como la capacidad de realizar acciones de manejo, restauración y conservación en el ANP para lograr la conservación de la Integridad Ecosistémica dentro de ésta área. Es calculada tomando como referencia el estado de la IE que tiene la zona de influencia (ZI), esta zona al no estar protegida se esperaría que tenga un estado de la IE menor que dentro de la ANP.
 
-El índice de eficacia indica el número de veces que hay de la clase más alta de integridad ecosistémica dentro del ANP con respecto a lo que hay en afuera de ella por lo que nos informa sobre el efecto de las acciones logradas en la IE.
+El indicador de eficacia es el número de veces que hay de la clase más alta de integridad ecosistémica dentro del ANP con respecto a lo que hay afuera de ella por lo que nos informa sobre el efecto de las acciones logradas en la ANP.
 
-**Medida**: cociente del porcentaje de la clase IE Alta adentro y afuera de la ANP, donde un valor de 1 significa condiciones similares dentro y fuera del ANP (es decir igual monto de superficie de la clase Alta de la IE). Arriba de 1 indica una mejor condición adentro del ANP que afuera y \<1 significa una mejor condición afuera que adentro del ANP
+#### **Indicador**
 
-## **Referencia**
+Cociente del porcentaje de la clase $IE_{alta}$ adentro y afuera de la ANP, donde un valor de 1 significa condiciones similares dentro y fuera del ANP (es decir igual monto de superficie de la clase Alta de la IE). Arriba de 1 indica una mejor condición adentro del ANP que afuera y \<1 significa una mejor condición afuera que adentro del ANP.
+
+**Referencia**
 
 Di Marco, Moreno, Simon Ferrier, Tom D Harwood, Andrew J Hoskins, and James EM Watson. 2019. “Wilderness Areas Halve the Extinction Risk of Terrestrial Biodiversity.” Nature 573 (7775): 582–85.
 

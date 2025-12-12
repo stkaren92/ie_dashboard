@@ -53,31 +53,32 @@ for(anp_name in df_cosmos_anps$ANP_name) {
       mutate(ie_4cat = ifelse(ie <= 4, "IE alta",
                               ifelse(ie <= 9, "IE media",
                                      ifelse(ie <= 13, "IE baja", "IE muy baja"))))
-    df_pct <- df_ie %>% 
-      group_by(location,ie_4cat) %>%
-      summarise(pct = n()) %>%
-      ungroup() %>% 
-      group_by(location) %>%
-      mutate(pct = pct/sum(pct))
     
-    df_diff <- df_pct %>%
-      select(location, ie_4cat, pct) %>%
-      tidyr::pivot_wider(names_from = location, values_from = pct) %>%
-      replace(is.na(.), 0)
+    df_ie$anp_name <- anp_name
+    df_ie$year <- y
     
-    df_diff$anp_name <- anp_name
-    df_diff$year <- y
-    
-    df_total <- rbind(df_total, df_diff)
+    df_total <- rbind(df_total, df_ie)
   }
 }
 
-df_total <- df_total %>% 
+
+df_pct <- df_total %>% 
+  group_by(anp_name,year,location,ie_4cat) %>%
+  summarise(pct = n()) %>%
+  ungroup() %>% 
+  group_by(anp_name,year,location) %>%
+  mutate(pct = pct/sum(pct))
+
+df_pct <- df_pct %>%
+  tidyr::pivot_wider(names_from = location, values_from = pct) %>%
+  replace(is.na(.), 0)
+
+df_pct <- df_pct %>% 
   left_join(df_cosmos_anps %>% 
               select(ANP_name,ANP_shortname),
             by=c("anp_name"="ANP_name"))
 
-df_dist <- df_total %>% 
+df_dist <- df_pct %>% 
   pivot_longer(cols=c(anp,periphery), 
                names_to = "location", values_to = "pct") %>% 
   mutate(year = factor(year,
@@ -90,7 +91,7 @@ df_dist <- df_total %>%
          location_name = ifelse(location == "anp",
                                 "ANP", "Zona de influencia"))
 
-df_efectividad <- df_total %>% 
+df_efectividad <- df_dist %>% 
   filter(ie_4cat == "IE alta") %>% 
   mutate(efectividad = anp/periphery)
 
