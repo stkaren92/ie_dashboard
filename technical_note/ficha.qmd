@@ -2,8 +2,8 @@
 format: 
   pdf:
     include-in-header: header.tex
+    pdf-engine: xelatex
     classoption: [twocolumn, landscape]
-    mainfont: Times New Roman
     fontsize: 11pt
     colorlinks: true
 editor: visual
@@ -112,16 +112,6 @@ text3 <- function(ef_anp, ef_com){
     sprintf("menos eficaces que el ANP %s, por lo que las acciones dentro de ésta muestran ser mejores a las realizadas en las ANP que pertenecen al mismo complejo", anp_name)
   } else {
     sprintf("igualmente eficaces que el ANP %s, por lo que las acciones dentro de ésta muestran ser similares a las realizadas en las ANP que pertenecen al mismo complejo", anp_name)
-  }
-}
-
-text4 <- function(diff_value){
-  if(diff_value > 0) {
-    "Se detecta un decremento de la superficie de $IE_{alta}$, en la ZI, es deseable que dicha tendencia se revierta y se mantenga bajo monitoreo."
-  } else if(diff_value < 0) {
-    "Se detecta un incremento de la superficie de $IE_{alta}$ en la ZI, es deseable que dicha tendencia se mantenga en aumento y bajo monitoreo"
-  } else {
-    "Se detecta un valor similar de la superficie de $IE_{alta}$ en la ZI, es deseable que dicha tendencia se revierta y se mantenga bajo monitoreo"
   }
 }
 
@@ -284,10 +274,10 @@ table_ie_alta_change <- df_dist %>%
   pivot_wider(names_from = "year",
               values_from = "pct",
               names_prefix = "ie_alta_") %>% 
-  mutate(ie_alta_diff = ie_alta_2023 - ie_alta_2020,
+  mutate(ie_alta_diff = floor(ie_alta_2023 - ie_alta_2020),
          ie_alta_diff_symbol = case_when(
-           ie_alta_diff > 0 ~ "↑",
-           ie_alta_diff < 0 ~ "↓",
+           ie_alta_diff > 0 ~ "$\\uparrow$",
+           ie_alta_diff < 0 ~ "$\\downarrow$",
            ie_alta_diff == 0 ~ "="
          ),
          ie_alta_color = case_when(
@@ -304,10 +294,10 @@ table_presion_change <- df_dist %>%
   pivot_wider(names_from = "year",
               values_from = "pct",
               names_prefix = "pres_") %>% 
-  mutate(pres_diff = pres_2023 - pres_2020,
+  mutate(pres_diff = floor(pres_2023 - pres_2020),
          pres_diff_symbol = case_when(
-           pres_diff > 0 ~ "↑",
-           pres_diff < 0 ~ "↓",
+           pres_diff > 0 ~ "$\\uparrow$",
+           pres_diff < 0 ~ "$\\downarrow$",
            pres_diff == 0 ~ "="
          ),
          pres_diff_color = case_when(
@@ -320,14 +310,14 @@ table_presion_change <- df_dist %>%
 
 table_efectividad_change <- df_efectividad %>% 
   select(ANP_shortname, year, efectividad) %>% 
-  mutate(efectividad = round(efectividad,2)) %>% 
+  mutate(efectividad = round(efectividad,1)) %>% 
   pivot_wider(names_from = "year",
               values_from = "efectividad",
               names_prefix = "ef_") %>%
-  mutate(ef_diff = ef_2023 - ef_2020,
+  mutate(ef_diff = floor(ef_2023 - ef_2020),
          ef_diff_symbol = case_when(
-           ef_diff > 0 ~ "↑",
-           ef_diff < 0 ~ "↓",
+           ef_diff > 0 ~ "$\\uparrow$",
+           ef_diff < 0 ~ "$\\downarrow$",
            ef_diff == 0 ~ "="
          ),
          ef_diff_color = case_when(
@@ -351,10 +341,10 @@ table_ie_alta_change_com <- df_dist_com %>%
   pivot_wider(names_from = "year",
               values_from = "pct",
               names_prefix = "ie_alta_") %>% 
-  mutate(ie_alta_diff = ie_alta_2023 - ie_alta_2020,
+  mutate(ie_alta_diff = floor(ie_alta_2023 - ie_alta_2020),
          ie_alta_diff_symbol = case_when(
-           ie_alta_diff > 0 ~ "↑",
-           ie_alta_diff < 0 ~ "↓",
+           ie_alta_diff > 0 ~ "$\\uparrow$",
+           ie_alta_diff < 0 ~ "$\\downarrow$",
            ie_alta_diff == 0 ~ "="
          ),
          ie_alta_color = case_when(
@@ -371,10 +361,10 @@ table_presion_change_com <- df_dist_com %>%
   pivot_wider(names_from = "year",
               values_from = "pct",
               names_prefix = "pres_") %>% 
-  mutate(pres_diff = pres_2023 - pres_2020,
+  mutate(pres_diff = floor(pres_2023 - pres_2020),
          pres_diff_symbol = case_when(
-           pres_diff > 0 ~ "↑",
-           pres_diff < 0 ~ "↓",
+           pres_diff > 0 ~ "$\\uparrow$",
+           pres_diff < 0 ~ "$\\downarrow$",
            pres_diff == 0 ~ "="
          ),
          pres_diff_color = case_when(
@@ -387,14 +377,14 @@ table_presion_change_com <- df_dist_com %>%
 
 table_efectividad_change_com <- df_efectividad_com %>% 
   select(Complejo, year, efectividad) %>% 
-  mutate(efectividad = round(efectividad,2)) %>% 
+  mutate(efectividad = round(efectividad,1)) %>% 
   pivot_wider(names_from = "year",
               values_from = "efectividad",
               names_prefix = "ef_") %>%
-  mutate(ef_diff = ef_2023 - ef_2020,
+  mutate(ef_diff = floor(ef_2023 - ef_2020),
          ef_diff_symbol = case_when(
-           ef_diff > 0 ~ "↑",
-           ef_diff < 0 ~ "↓",
+           ef_diff > 0 ~ "$\\uparrow$",
+           ef_diff < 0 ~ "$\\downarrow$",
            ef_diff == 0 ~ "="
          ),
          ef_diff_color = case_when(
@@ -418,10 +408,12 @@ colores <- c(
 )
 ```
 
-# Diagnóstico de Integridad Ecosistémica de la ANP `r anp_name` y su complejo
+# Diagnóstico de Integridad Ecosistémica (IE) de la ANP `r anp_name` y su complejo
+
+Año: 2023
 
 ```{r map, echo=FALSE, message=FALSE, results='hide'}
-#| fig-width: 9
+#| fig-height: 4
 
 # IE raster
 ie <- rast('/Users/kasanchez/Documents/ie_dashboard/data/ie/ie_xgb_2023.tif')
@@ -463,7 +455,7 @@ ggplot() +
     linewidth = 0.6
   ) +
   scale_fill_manual(
-    name = "IE",
+    name = "Integridad Ecosistémica",
     values = c(
       "1" = "#1A9641",
       "2" = "#A6D96A",
@@ -523,7 +515,7 @@ ggplot(df_dist,
         legend.key.size = unit(0.2, "cm"))
 ```
 
-## Estado de la Integridad Ecosistémica del ANP ($EIE$)
+## ![](img/IE.png){width="65" height="61"} Estado de la Integridad Ecosistémica ($EIE$)
 
 ```{r ie-alta-chenge-table, echo=FALSE}
 #| layout-ncol: 2
@@ -532,7 +524,7 @@ ggplot(df_dist,
 table_change %>%
   select(ANP_shortname, ie_alta_diff_symbol) %>% 
   rename(ANP = ANP_shortname,
-        `Estado IE` = ie_alta_diff_symbol) %>% 
+        `EIE` = ie_alta_diff_symbol) %>% 
   kable(escape = FALSE, align = "c", format = "latex",
         booktabs = T) %>%
   kable_styling(position = "center", 
@@ -644,7 +636,117 @@ table_ie_alta %>%
 
 ```
 
-## Presión de la Zona de Influencia ($P$)
+## ![](img/Eficacia.png){width="65"} Eficacia en la protección de la Integridad Ecosistémica ($Ef_{IE}$) del ANP
+
+```{r effectivity-plot, echo=FALSE, message=FALSE, results='hide'}
+#| fig-height: 1.2
+
+ggplot(df_efectividad, 
+       aes(x = ANP_shortname, y = efectividad)) +
+  geom_hline(yintercept = 1, linetype="dashed", color = "red") +
+  geom_line(color="azure4") + 
+  geom_point(aes(color = factor(year))) +
+  # scale_y_continuous(trans = 'log10') +
+  scale_color_manual("Año",
+                     values = c("2020" = "orange",
+                                "2023" = "blue")) +
+  labs(x = NULL, y = NULL) +
+  coord_flip() +
+  theme_classic()
+```
+
+```{r effectivity-change-table, echo=FALSE}
+#| layout-ncol: 2
+
+# Table on the left
+table_change %>%
+  select(ANP_shortname, ef_diff_symbol) %>% 
+  rename(ANP = ANP_shortname,
+        `Eficacia` = ef_diff_symbol)  %>% 
+  kable(escape = FALSE, align = "c", format = "latex",
+        booktabs = T) %>%
+  kable_styling(position = "center", 
+                font_size = 13,
+                latex_options = c("hold_position")) %>% 
+  column_spec(2, background = table_change %>%
+                pull(ef_diff_color) %>%
+                purrr::map_chr(~ colores[.x])) 
+
+# Table on the right
+df_cat <- data.frame(
+  Eficacia = c(
+    "Sin eficacia",
+    "Parcial",
+    "Alta",
+    "Sobresaliente"
+  ),
+  Criterio = c(
+    "$Ef_{IE}$ <1",
+    "1 a 2",
+    "2 a 3",
+    ">3"
+  )
+)
+
+df_cat %>%
+  mutate(
+    Eficacia = cell_spec(Eficacia, color = col_palette)  # text color only
+  ) %>%
+  kable(
+    format = "latex",
+    booktabs = TRUE,
+    escape = FALSE,
+    align = "l",
+  ) %>%
+  kable_styling(position = "center", 
+                font_size = 10,
+                latex_options = "hold_position")
+```
+
+```{r effectivity-get, echo=FALSE}
+table_efectividad <- df_efectividad %>% 
+  select(ANP_shortname, year, efectividad) %>% 
+  mutate(efectividad = round(efectividad,1)) %>% 
+  pivot_wider(names_from = "ANP_shortname",
+              values_from = "efectividad") %>% 
+  rename("año" = "year")
+
+efectividad_anp <- table_change %>% 
+  filter(ANP_shortname == anp_shortname) %>% 
+  pull(ef_2023)
+
+efectividad_anp_diff <- table_change %>% 
+  filter(ANP_shortname == anp_shortname) %>% 
+  pull(ef_diff)
+
+efectividad_com <- table_change_com %>% 
+  filter(Complejo == complejo_name) %>% 
+  pull(ef_2023)
+
+efectividad_com_diff <- table_change_com %>% 
+  filter(Complejo == complejo_name) %>% 
+  pull(ef_diff)
+```
+
+$Ef_{IE,2023}$ de `r anp_shortname`: `r color_efectividad(efectividad_anp)` `r diff_text(efectividad_anp_diff)`.
+
+```{r effectivity-table, echo=FALSE}
+table_efectividad %>%
+  mutate(across(names(table_efectividad)[-1],
+                ~ case_when(
+                    . <= 1 ~ cell_spec(., color = col_palette[1]),
+                    . <= 2 ~ cell_spec(., color = col_palette[2],),
+                    . <= 3 ~ cell_spec(., color = col_palette[3]),
+                    TRUE     ~ cell_spec(., color = col_palette[4])
+                ))) %>%
+  kable(escape = F, align = "c", 
+        booktabs = T, format = "latex",
+        caption = "Eficacia") %>% 
+  kable_styling(position = "center", latex_options = c("hold_position"))
+
+```
+
+## ![](img/Presion.png){width="65"} Presión de la Zona de Influencia ($P$)
 
 ```{r pressure-change-table, echo=FALSE}
 #| layout-ncol: 2
@@ -753,125 +855,15 @@ table_presion %>%
   kable_styling(position = "center", latex_options = c("hold_position"))
 ```
 
-## Eficacia en la protección de la Integridad Ecosistémica del ANP ($Ef_{IE}$)
-
-```{r effectivity-plot, echo=FALSE, message=FALSE, results='hide'}
-#| fig-height: 1.2
-
-ggplot(df_efectividad, 
-       aes(x = ANP_shortname, y = efectividad)) +
-  geom_hline(yintercept = 1, linetype="dashed", color = "red") +
-  geom_line(color="azure4") + 
-  geom_point(aes(color = factor(year))) +
-  # scale_y_continuous(trans = 'log10') +
-  scale_color_manual("Año",
-                     values = c("2020" = "orange",
-                                "2023" = "blue")) +
-  labs(x = NULL, y = NULL) +
-  coord_flip() +
-  theme_classic()
-```
-
-```{r effectivity-change-table, echo=FALSE}
-#| layout-ncol: 2
-
-# Table on the left
-table_change %>%
-  select(ANP_shortname, ef_diff_symbol) %>% 
-  rename(ANP = ANP_shortname,
-        `Eficacia` = ef_diff_symbol)  %>% 
-  kable(escape = FALSE, align = "c", format = "latex",
-        booktabs = T) %>%
-  kable_styling(position = "center", 
-                font_size = 13,
-                latex_options = c("hold_position")) %>% 
-  column_spec(2, background = table_change %>%
-                pull(ef_diff_color) %>%
-                purrr::map_chr(~ colores[.x])) 
-
-# Table on the right
-df_cat <- data.frame(
-  Eficacia = c(
-    "Sin eficacia",
-    "Parcial",
-    "Alta",
-    "Muy alta"
-  ),
-  Criterio = c(
-    "<1",
-    "1 a 2",
-    "2 a 3",
-    ">3"
-  )
-)
-
-df_cat %>%
-  mutate(
-    Eficacia = cell_spec(Eficacia, color = col_palette)  # text color only
-  ) %>%
-  kable(
-    format = "latex",
-    booktabs = TRUE,
-    escape = FALSE,
-    align = "l",
-  ) %>%
-  kable_styling(position = "center", 
-                font_size = 10,
-                latex_options = "hold_position")
-```
-
-```{r effectivity-get, echo=FALSE}
-table_efectividad <- df_efectividad %>% 
-  select(ANP_shortname, year, efectividad) %>% 
-  mutate(efectividad = round(efectividad,2)) %>% 
-  pivot_wider(names_from = "ANP_shortname",
-              values_from = "efectividad") %>% 
-  rename("año" = "year")
-
-efectividad_anp <- table_change %>% 
-  filter(ANP_shortname == anp_shortname) %>% 
-  pull(ef_2023)
-
-efectividad_anp_diff <- table_change %>% 
-  filter(ANP_shortname == anp_shortname) %>% 
-  pull(ef_diff)
-
-efectividad_com <- table_change_com %>% 
-  filter(Complejo == complejo_name) %>% 
-  pull(ef_2023)
-
-efectividad_com_diff <- table_change_com %>% 
-  filter(Complejo == complejo_name) %>% 
-  pull(ef_diff)
-```
-
-$Ef_{2023}$ de `r anp_shortname`: `r color_efectividad(efectividad_anp)` `r diff_text(efectividad_anp_diff)`.
-
-```{r effectivity-table, echo=FALSE}
-table_efectividad %>%
-  mutate(across(names(table_efectividad)[-1],
-                ~ case_when(
-                    . <= 1 ~ cell_spec(., color = col_palette[1]),
-                    . <= 2 ~ cell_spec(., color = col_palette[2],),
-                    . <= 3 ~ cell_spec(., color = col_palette[3]),
-                    TRUE     ~ cell_spec(., color = col_palette[4])
-                ))) %>%
-  kable(escape = F, align = "c", 
-        booktabs = T, format = "latex",
-        caption = "Eficacia") %>% 
-  kable_styling(position = "center", latex_options = c("hold_position"))
-
-```
-
-## Complejo
+## Referencia con otros complejos regionales
 
 ```{r complejo-color-table, echo=FALSE}
 
 table_change_com %>%
-  select(Complejo, ie_alta_diff_symbol, pres_diff_symbol, ef_diff_symbol) %>% 
+  select(Complejo, ie_alta_diff_symbol, ef_diff_symbol, pres_diff_symbol) %>% 
   rename(`Estado IE` = ie_alta_diff_symbol,
         `Presión` = pres_diff_symbol,
-        `Ef` = ef_diff_symbol) %>% 
+        `Eficacia` = ef_diff_symbol) %>% 
   kable(escape = FALSE, align = "c", format = "latex",
         booktabs = T) %>%
   kable_styling(position = "center", latex_options = c("hold_position")) %>% 
@@ -879,62 +871,64 @@ table_change_com %>%
                 pull(ie_alta_color) %>%
                 purrr::map_chr(~ colores[.x])) %>%
   column_spec(3, background = table_change_com %>%
-                pull(pres_diff_color) %>%
+                pull(ef_diff_color) %>%
                 purrr::map_chr(~ colores[.x])) %>%
   column_spec(4, background = table_change_com %>%
-                pull(ef_diff_color) %>%
+                pull(pres_diff_color) %>%
                 purrr::map_chr(~ colores[.x])) 
 ```
 
-$EIE_{2023}$ de `r complejo_name`: `r color_ie_alta(ie_alta_com)` `r diff_text(ie_alta_com_diff)`.
+El `r complejo_name` tiene:
 
-$P_{2023}$ de `r complejo_name`: `r color_presion(presion_com)` `r diff_text(presion_com_diff)`.
+-   $EIE_{2023}$: `r color_ie_alta(ie_alta_com)` `r diff_text(ie_alta_com_diff)`.
 
-$Ef_{2023}$ de `r complejo_name`: `r color_efectividad(efectividad_com)` `r diff_text(efectividad_com_diff)`.
+-   $Ef_{IE,2023}$: `r color_efectividad(efectividad_com)` `r diff_text(efectividad_com_diff)`.
+
+-   $P_{2023}$: `r color_presion(presion_com)` `r diff_text(presion_com_diff)`.
 
 ## SÍNTESIS
 
-La ANP `r anp_name` presenta un estado de `r color_ie_alta(ie_alta_anp)`, `r color_presion(presion_anp)` y `r color_efectividad(efectividad_anp)`. Esto significa que `r text1(ie_alta_anp)` de Conservación de IE muy alta y mantener el monitoreo del estado IE del ANP y su Zona de Influencia (ZI).
+La ANP `r anp_name` presenta un estado de `r color_ie_alta(ie_alta_anp)`, `r color_efectividad(efectividad_anp)` y `r color_presion(presion_anp)`. Esto significa que `r text1(ie_alta_anp)` de Conservación muy alta y mantener el monitoreo del estado de IE del ANP y su Zona de Influencia (ZI).
 
-Dado el estado de conservación de la IE en el ANP y la tendencia descrita entre el 2020 y 2023, es deseable que la tendencia en el estado de la Conservación de la IE `r text2(ie_alta_anp_diff)` y la tendencia de la eficacia `r text2(efectividad_anp_diff)`. Las otras ANP del complejo presentan una `r color_efectividad(efectividad_com)`, es decir que son `r text3(efectividad_anp, efectividad_com)`.
+Dado el estado de conservación de la IE en el ANP y la tendencia descrita entre el 2020 y 2023, es deseable que la tendencia en el estado de la Conservación `r text2(ie_alta_anp_diff)` y la tendencia de la eficacia `r text2(efectividad_anp_diff)`. Las otras ANP del complejo presentan una `r color_efectividad(efectividad_com)`, es decir que son `r text3(efectividad_anp, efectividad_com)`.
 
-## CONSIDERACIÓN IMPORTANTE
+## IMPORTANTE
 
-Para comprender el estado de una ANP es importante siempre considerar todos los indicadores en conjunto tanto el Estado de Integridad Ecosistémica y Eficacia del ANP como la Presión que sufre el ANP en su Zona de Influencia, y verificar el contexto y estado de las ANP aledañas.
+Para comprender el estado de una ANP es importante considerar los tres indicadores en conjunto, tanto el Estado de Integridad Ecosistémica y Eficacia del ANP, como la Presión que sufre el ANP en su ZI, así como revisar el estado de las ANP aledañas en el mismo complejo pues son comparables por estar localizadas en la misma zona bajo impactos antropogénicos y condiciones económicas y sociales similares.
 
 ## DESCRIPCIÓN Y CÁLCULO DE INDICADORES
 
 ### Estado de la Integridad Ecosistémica del ANP
 
-El indicador del Estado de la Integridad Ecosistémica Del ANP ($EIE$) es calculado con el porcentaje del total del área que ocupa la clase alta ($IE_{alta}$), es decir:
+El indicador del Estado de la Integridad Ecosistémica ($EIE$) del ANP es el **porcentaje del total del área que ocupa la clase de Integridad Ecosistémica alta** ($IE_{alta}$), es decir:
 
 $$EIE = \%IE_{alta}(ANP)$$
 
-Para el año 2023 el $EIE$ del ANP fue de `r ie_alta_anp`% y en el complejo fue de `r ie_alta_com`%. De acuerdo a las clases definidas con base en los criterios, la ANP presenta `r color_ie_alta(ie_alta_anp)` y el complejo al que pertenece `r color_ie_alta(ie_alta_com)`.
+**Lo deseable en una ANP es tener 100% de su área con clase** **$IE_{alta}$**.
+
+### Eficacia en la protección de la Integridad Ecosistémica
+
+**“La eficacia es la capacidad de lograr el efecto que se desea o se espera.”** (RAE)
+
+En el caso de las ANP, la eficacia en la protección de la IE la entenderemos como **la capacidad de realizar acciones de manejo, restauración y conservación en el ANP con el fin específico de proteger y mantener alto el porcentaje de área con Integridad Ecosistémica alta.** La eficacia es calculada tomando como referencia el porcentaje de IE alta que tiene la zona de influencia (ZI), esta zona al no estar protegida **se esperaría que tenga menor porcentaje de área con IE alta que lo que hay dentro de la ANP.**
+
+El valor de la eficacia en la protección de la IE ($Ef_{IE}$) del ANP, se calcula como el **cociente del porcentaje de IE alta dentro del ANP (**$\%IE_{alta}(ANP)$**) entre el porcentaje de IE alta en el área de la Zona de Influencia (**$\%IE_{alta}(ZI)$**)**, es decir:
+
+$$
+Ef_{IE}=\frac{\%IE_{alta}(ANP)}{\%IE_{alta}(ZI)}
+$$
+
+El indicador de eficacia representa el número de veces que hay de porcentaje de IE alta dentro del ANP con respecto a lo que hay afuera de ella, por lo que nos informa sobre el efecto de las acciones logradas en la IE. Un valor de 1 significa condiciones similares dentro y fuera del ANP (es decir igual proporción de área de IE alta) y \<1 significa una mejor condición afuera del ANP que adentro, por lo que en ambos casos no parecen ser relevantes las acciones de manejo del ANP. En contraste, obtener valores arriba de 1 indica una mejor condición adentro del ANP que afuera, por lo que indica un manejo adecuado y eficaz dada la condición y presión existente en el ANP.
 
 ### Presión de la Zona de Influencia
 
-Definimos la Presión ($P$) como el porcentaje del total del área que no tiene integridad alta en la Zona de Influencia (ZI), es decir:
+Definimos la Presión ($P$) de la Zona de Influencia (ZI) como el **porcentaje del total del área que no tiene IE alta en la Zona de Influencia (ZI)**, es decir:
 
 $$
 P=100\%-\%IE_{alta}(ZI)
 $$
 
-Esto nos indica el grado de presión existente en la superficie de territorio alrededor de la ANP. Está en función del porcentaje de la clase $IE_{alta}$, si esta es baja en la ZI la presión es mayor.
-
-La ZI del ANP tiene un total de `r 100-presion_anp`% de $IE_{alta}$, por lo que la ANP tiene una `r color_presion(presion_anp)` de `r presion_anp`%. `r text4(efectividad_anp_diff)`.
-
-### Eficacia en la protección de la Integridad Ecosistémica del ANP
-
-El valor de la eficacia en la protección de la IE en la ANP ($Ef$) , se calcula como el cociente del porcentaje de la clase alta dentro del ANP ($\%IE_{alta}(ANP)$) entre el porcentaje de la clase alta en el área de la Zona de Influencia ($\%IE_{alta}(ZI)$), es decir:
-
-$$
-Ef=\frac{\%IE_{alta}(ANP)}{\%IE_{alta}(ZI)}
-$$
-
-Además de indicar la magnitud de protección de la IE, nos permite saber el contexto geográfico del ANP en cuanto a la presión existente fuera de ella.
-
-El valor de $Ef_{IE}$ calculado para todas las ANP en el complejo es de `r efectividad_com` y en el ANP `r anp_name` es de `r efectividad_anp`, por lo que se considera que la eficacia es de tipo: `r color_efectividad(efectividad_com)` en el complejo y `r color_efectividad(efectividad_anp)` en el ANP de acuerdo a los criterios definidos. Entre el 2020 y el 2023 se detectó una tendencia `r diff_text(efectividad_anp)` en la eficacia del ANP.
+El porcentaje de $IE_{alta}$ en la ZI nos indica el **grado de presión existente en el territorio alrededor de la ANP, si éste es bajo la presión es mayor.**
 
 ## **DEFINICIONES Y MÉTODO**
 
@@ -944,47 +938,35 @@ La Integridad Ecosistémica (IE) se refiere a qué tan completo, funcional o in
 
 ### **Índice de Integridad Ecosistémica**
 
-El Índice de Integridad Ecosistémica (IIE) representa el grado de transformación de la *vegetación primaria* (vegetación antes de los grandes cambios antropogénicos), respecto a su situación actual (CONABIO, 2025).
+El Índice de Integridad Ecosistémica (IIE) representa el grado de transformación de la $vegetación$ $primaria$ (vegetación antes de los grandes cambios antropogénicos), respecto a su situación actual (CONABIO, 2025).
 
 ### **Método del cálculo del Índice de Integridad Ecosistémica**
 
-El IIE se basa en la variable *hemerobia*, cuya clasificación originalmente consta de 18 clases (Equihua et al 2018). Ésta fue actualizada dado los cambios en la nomenclatura de las clases de vegetación y cuerpos de agua de la Serie VII de INEGI, cuyo mapa es comparado con el de v*egetación primaria* para obtener el IIE.
+El IIE se basa en la variable $hemerobia$, cuya clasificación originalmente consta de 18 clases (Equihua et al 2018). Ésta fue actualizada dado los cambios en la nomenclatura de las clases de vegetación y cuerpos de agua de la Serie VII de INEGI, cuyo mapa es comparado con el de $vegetación$ $primaria$ para obtener el IIE.
 
 Para la mejor comprensión de los estados de IE y efectividad las 16 clases resultantes, se recategorizaron en 4: $IE_{alta}$, $IE_{media}$, $IE_{baja}$, $IE_{muy baja}$ (CONABIO, 2025).
 
-La clase alta ($IE\_{alta}$) representa a la vegetación natural (primaria) remanente en el país representada por las clases 0 a la 4 de la *hemerobia*. Ésta es tomada como referencia para estimar los indicadores de estado, presión y eficacia.
+La clase alta ($IE_{alta}$) representa a la vegetación natural (primaria) remanente en el país representada por las clases 0 a la 4 de la $hemerobia$. Ésta es tomada como referencia para estimar los indicadores de estado, presión y eficacia.
 
 #### Modelo
 
-Para estimar el IIE de diferentes años, se usa un modelo *XGBoost* (refuerzo del gradiente extremo), el cual es un método de aprendizaje automático supervisado para clasificación, que mediante variables predictoras estima el valor del IIE para el año deseado.
+Para estimar el IIE de diferentes años, se usa un modelo $XGBoost$ (refuerzo del gradiente extremo), el cual es un método de aprendizaje automático supervisado para clasificación, que mediante variables predictoras estima el valor del IIE para el año deseado.
 
 #### **Variables predictoras**
 
-Cobertura forestal (MODIS, NASA LP DAAC), productividad primaria bruta (fotosíntesis), estructura de la vegetación (radar en Sentinel 2), elevación, zonas de vida de Holdridge). Resolución: 250x250m
+Cobertura del suelo (MODIS, NASA LP DAAC), productividad primaria bruta (fotosíntesis), estructura de la vegetación (radar Sentinel-1), elevación, zonas de vida de Holdridge y distancia al borde. Resolución: 250x250m
 
 #### **Validación**
 
 Experta (CONANP IE Fauna y CONANP-PIMBio), Fauna indicadora clave (SiPeCaM), Evaluación Rápida de Integridad Ecosistémica (ERIE).
 
-### **Eficacia en la Conservación de la Integridad Ecosistémica en las ANP**
-
-*“La eficacia es la capacidad de lograr el efecto que se desea o se espera*.”
-
-En este caso, lo entenderemos como la capacidad de realizar acciones de manejo, restauración y conservación en el ANP para lograr la conservación de la Integridad Ecosistémica dentro de ésta área. Es calculada tomando como referencia el estado de la IE que tiene la zona de influencia (ZI), esta zona al no estar protegida se esperaría que tenga un estado de la IE menor que dentro de la ANP.
-
-El indicador de eficacia es el número de veces que hay de la clase más alta de integridad ecosistémica dentro del ANP con respecto a lo que hay afuera de ella por lo que nos informa sobre el efecto de las acciones logradas en la ANP.
-
-#### **Indicador**
-
-Cociente del porcentaje de la clase $IE_{alta}$ adentro y afuera de la ANP, donde un valor de 1 significa condiciones similares dentro y fuera del ANP (es decir igual monto de superficie de la clase Alta de la IE). Arriba de 1 indica una mejor condición adentro del ANP que afuera y \<1 significa una mejor condición afuera que adentro del ANP.
-
-**Referencia**
+## **Referencia**
 
 Di Marco, Moreno, Simon Ferrier, Tom D Harwood, Andrew J Hoskins, and James EM Watson. 2019. “Wilderness Areas Halve the Extinction Risk of Terrestrial Biodiversity.” Nature 573 (7775): 582–85.
 
 Martin, Tara G, and James EM Watson. 2016. “Intact Ecosystems Provide Best Defence Against Climate Change.” Nature Climate Change 6 (2): 122–24.
 
-Watson, James EM, Tom Evans, Oscar Venter, Brooke Williams, Ayesha Tulloch, Claire Stewart, Ian Thomp- son, et al. 2018. “The Exceptional Value of Intact Forest Ecosystems.” Nature Ecology & Evolution. 
+Watson, James EM, Tom Evans, Oscar Venter, Brooke Williams, Ayesha Tulloch, Claire Stewart, Ian Thomp- son, et al. 2018. “The Exceptional Value of Intact Forest Ecosystems.” Nature Ecology & Evolution.
 
 Plataforma de condición de las Áreas NaturalesProtegidas: Integridad Ecosistémica 2020- 2023-2027. COSMOS. <https://karensanchez.shinyapps.io/ie_dashboard/>
 
