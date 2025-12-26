@@ -408,12 +408,11 @@ colores <- c(
 )
 ```
 
-# Diagnóstico de Integridad Ecosistémica (IE) de la ANP `r anp_name` y su complejo
-
-Año: 2023
+# Diagnóstico de Integridad Ecosistémica (IE) en el ANP `r anp_name` y su complejo
+## Año: 2023
 
 ```{r map, echo=FALSE, message=FALSE, results='hide'}
-#| fig-height: 4
+#| fig-height: 3.8
 
 # IE raster
 ie <- rast('/Users/kasanchez/Documents/ie_dashboard/data/ie/ie_xgb_2023.tif')
@@ -515,6 +514,22 @@ ggplot(df_dist,
         legend.key.size = unit(0.2, "cm"))
 ```
 
+```{r anp-shorname-table, echo=FALSE}
+df_dist %>%
+  select(ANP_shortname, anp_name) %>% 
+  distinct() %>% 
+  rename(ANP = anp_name,
+         Siglas = ANP_shortname) %>% 
+  kable(escape = FALSE, 
+        col.names = NULL,
+        align = c("l"), format = "latex",
+        booktabs = T) %>%
+  column_spec(2, width = "5.5cm") %>%
+  kable_styling(position = "left", 
+                latex_options = c("hold_position"),
+                font_size = 9,)
+```
+
 ## ![](img/IE.png){width="65" height="61"} Estado de la Integridad Ecosistémica ($EIE$)
 
 ```{r ie-alta-chenge-table, echo=FALSE}
@@ -525,12 +540,13 @@ table_change %>%
   select(ANP_shortname, ie_alta_diff_symbol) %>% 
   rename(ANP = ANP_shortname,
         `EIE` = ie_alta_diff_symbol) %>% 
-  kable(escape = FALSE, align = "c", format = "latex",
+  kable(escape = FALSE, align = c("l","c"), format = "latex",
         booktabs = T) %>%
   kable_styling(position = "center", 
                 latex_options = c("hold_position"),
                 font_size = 13) %>% 
-  column_spec(2, background = table_change %>%
+  column_spec(2, color = "white",
+              background = table_change %>%
                 pull(ie_alta_color) %>%
                 purrr::map_chr(~ colores[.x]))
 
@@ -648,9 +664,9 @@ ggplot(df_efectividad,
   geom_point(aes(color = factor(year))) +
   # scale_y_continuous(trans = 'log10') +
   scale_color_manual("Año",
-                     values = c("2020" = "orange",
-                                "2023" = "blue")) +
-  labs(x = NULL, y = NULL) +
+                     values = c("2020" = "aquamarine4",
+                                "2023" = "darkorchid4")) +
+  labs(x = NULL, y = "Eficacia") +
   coord_flip() +
   theme_classic()
 ```
@@ -663,12 +679,13 @@ table_change %>%
   select(ANP_shortname, ef_diff_symbol) %>% 
   rename(ANP = ANP_shortname,
         `Eficacia` = ef_diff_symbol)  %>% 
-  kable(escape = FALSE, align = "c", format = "latex",
+  kable(escape = FALSE, align = c("l","c"), format = "latex",
         booktabs = T) %>%
   kable_styling(position = "center", 
                 font_size = 13,
                 latex_options = c("hold_position")) %>% 
-  column_spec(2, background = table_change %>%
+  column_spec(2, color = "white",
+              background = table_change %>%
                 pull(ef_diff_color) %>%
                 purrr::map_chr(~ colores[.x])) 
 
@@ -726,6 +743,26 @@ efectividad_com <- table_change_com %>%
 efectividad_com_diff <- table_change_com %>% 
   filter(Complejo == complejo_name) %>% 
   pull(ef_diff)
+
+# Effectivity of ANPs in Complejo
+# excluding selected ANP
+efectividad_com_noANP <- df_ie_total %>%
+  filter(Complejo == complejo_name &
+           ANP_shortname != anp_shortname &
+           year == 2023) %>% 
+  count(Complejo,
+        location, 
+        ie_4cat, name = "pct") %>% 
+  group_by(Complejo,
+           location) %>% 
+  mutate(pct = pct / sum(pct)) %>% 
+  ungroup() %>%
+  tidyr::pivot_wider(names_from = location, values_from = pct) %>%
+  replace(is.na(.), 0) %>% 
+  filter(ie_4cat == "IE alta") %>% 
+  mutate(efectividad = anp/periphery) %>%
+  mutate(efectividad = round(efectividad,1)) %>% 
+  pull(efectividad)
 ```
 
 $Ef_{IE,2023}$ de `r anp_shortname`: `r color_efectividad(efectividad_anp)` `r diff_text(efectividad_anp_diff)`.
@@ -739,10 +776,11 @@ table_efectividad %>%
                     . <= 3 ~ cell_spec(., color = col_palette[3]),
                     TRUE     ~ cell_spec(., color = col_palette[4])
                 ))) %>%
-  kable(escape = F, align = "c", 
+  kable(escape = F, align = "c",
         booktabs = T, format = "latex",
         caption = "Eficacia") %>% 
-  kable_styling(position = "center", latex_options = c("hold_position"))
+  kable_styling(position = "center", 
+                latex_options = c("hold_position"))
 
 ```
 
@@ -756,11 +794,12 @@ table_change %>%
   select(ANP_shortname, pres_diff_symbol) %>% 
   rename(ANP = ANP_shortname,
         `Presión` = pres_diff_symbol)  %>% 
-  kable(escape = FALSE, align = "c", format = "latex",
+  kable(escape = FALSE, align = c("l","c"), format = "latex",
         booktabs = T) %>%
   kable_styling(position = "center", font_size = 13,
                 latex_options = c("hold_position")) %>% 
-  column_spec(2, background = table_change %>%
+  column_spec(2, color = "white",
+              background = table_change %>%
                 pull(pres_diff_color) %>%
                 purrr::map_chr(~ colores[.x]))
 
@@ -864,16 +903,23 @@ table_change_com %>%
   rename(`Estado IE` = ie_alta_diff_symbol,
         `Presión` = pres_diff_symbol,
         `Eficacia` = ef_diff_symbol) %>% 
-  kable(escape = FALSE, align = "c", format = "latex",
-        booktabs = T) %>%
-  kable_styling(position = "center", latex_options = c("hold_position")) %>% 
-  column_spec(2, background = table_change_com %>%
+  kable(escape = FALSE, 
+        align = c("l", "c", "c", "c"),
+        format = "latex",
+        booktabs = T,
+        linesep = "") %>%
+  kable_styling(position = "center", 
+                latex_options = c("hold_position")) %>% 
+  column_spec(2, color = "white",
+              background = table_change_com %>%
                 pull(ie_alta_color) %>%
                 purrr::map_chr(~ colores[.x])) %>%
-  column_spec(3, background = table_change_com %>%
+  column_spec(3, color = "white",
+              background = table_change_com %>%
                 pull(ef_diff_color) %>%
                 purrr::map_chr(~ colores[.x])) %>%
-  column_spec(4, background = table_change_com %>%
+  column_spec(4, color = "white",
+              background = table_change_com %>%
                 pull(pres_diff_color) %>%
                 purrr::map_chr(~ colores[.x])) 
 ```
@@ -888,15 +934,15 @@ El `r complejo_name` tiene:
 
 ## SÍNTESIS
 
-La ANP `r anp_name` presenta un estado de `r color_ie_alta(ie_alta_anp)`, `r color_efectividad(efectividad_anp)` y `r color_presion(presion_anp)`. Esto significa que `r text1(ie_alta_anp)` de Conservación muy alta y mantener el monitoreo del estado de IE del ANP y su Zona de Influencia (ZI).
+El ANP `r anp_name` presenta un estado de `r color_ie_alta(ie_alta_anp)`, `r color_efectividad(efectividad_anp)` y `r color_presion(presion_anp)`. Esto significa que `r text1(ie_alta_anp)` de Conservación muy alta y mantener el monitoreo del estado de IE del ANP y su Zona de Influencia (ZI).
 
-Dado el estado de conservación de la IE en el ANP y la tendencia descrita entre el 2020 y 2023, es deseable que la tendencia en el estado de la Conservación `r text2(ie_alta_anp_diff)` y la tendencia de la eficacia `r text2(efectividad_anp_diff)`. Las otras ANP del complejo presentan una `r color_efectividad(efectividad_com)`, es decir que son `r text3(efectividad_anp, efectividad_com)`.
+Dado el estado de conservación de la IE en el ANP y la tendencia descrita entre el 2020 y 2023, es deseable que la tendencia en el estado de la Conservación `r text2(ie_alta_anp_diff)` y la tendencia de la eficacia `r text2(efectividad_anp_diff)`. Las otras ANP del complejo presentan una `r color_efectividad(efectividad_com_noANP)`, es decir que son `r text3(efectividad_anp, efectividad_com)`.
 
 ## IMPORTANTE
 
 Para comprender el estado de una ANP es importante considerar los tres indicadores en conjunto, tanto el Estado de Integridad Ecosistémica y Eficacia del ANP, como la Presión que sufre el ANP en su ZI, así como revisar el estado de las ANP aledañas en el mismo complejo pues son comparables por estar localizadas en la misma zona bajo impactos antropogénicos y condiciones económicas y sociales similares.
 
-## DESCRIPCIÓN Y CÁLCULO DE INDICADORES
+## CÁLCULO DE INDICADORES
 
 ### Estado de la Integridad Ecosistémica del ANP
 
@@ -904,7 +950,7 @@ El indicador del Estado de la Integridad Ecosistémica ($EIE$) del ANP es el **p
 
 $$EIE = \%IE_{alta}(ANP)$$
 
-**Lo deseable en una ANP es tener 100% de su área con clase** **$IE_{alta}$**.
+**Un porcentaje deseable de IE en una ANP es tener 100% de su superficie geográfica con clase** $IE_{alta}$.
 
 ### Eficacia en la protección de la Integridad Ecosistémica
 
@@ -938,7 +984,7 @@ La Integridad Ecosistémica (IE) se refiere a qué tan completo, funcional o in
 
 ### **Índice de Integridad Ecosistémica**
 
-El Índice de Integridad Ecosistémica (IIE) representa el grado de transformación de la $vegetación$ $primaria$ (vegetación antes de los grandes cambios antropogénicos), respecto a su situación actual (CONABIO, 2025).
+El Índice de Integridad Ecosistémica (IIE) informa sobre el grado de conservación de la estructura y función de la vegetación en el tiempo con respecto a la vegetación primaria para informar de la condición de los ecosistemas con base a la intensidad de cambio en la cobertura vegetal.
 
 ### **Método del cálculo del Índice de Integridad Ecosistémica**
 
@@ -958,7 +1004,7 @@ Cobertura del suelo (MODIS, NASA LP DAAC), productividad primaria bruta (fotosí
 
 #### **Validación**
 
-Experta (CONANP IE Fauna y CONANP-PIMBio), Fauna indicadora clave (SiPeCaM), Evaluación Rápida de Integridad Ecosistémica (ERIE).
+Fauna indicadora clave (SiPeCaM).
 
 ## **Referencia**
 
@@ -968,6 +1014,6 @@ Martin, Tara G, and James EM Watson. 2016. “Intact Ecosystems Provide Best Def
 
 Watson, James EM, Tom Evans, Oscar Venter, Brooke Williams, Ayesha Tulloch, Claire Stewart, Ian Thomp- son, et al. 2018. “The Exceptional Value of Intact Forest Ecosystems.” Nature Ecology & Evolution.
 
-Plataforma de condición de las Áreas NaturalesProtegidas: Integridad Ecosistémica 2020- 2023-2027. COSMOS. <https://karensanchez.shinyapps.io/ie_dashboard/>
+Plataforma de condición de las Áreas NaturalesProtegidas: Integridad Ecosistémica 2020- 2023-2027. COSMOS. <https://karensanchez.shinyapps.io/iie_anps>
 
-Sánchez et al. Modelo de clasificación de Integridad Ecosistémica. CONABIO.. 2025 <https://github.com/CONABIO/ie_model>
+Sánchez et al. Modelo de clasificación de Integridad Ecosistémica. CONABIO. 2025 <https://github.com/CONABIO/ie_model>
