@@ -184,8 +184,7 @@ ui <- navbarPage(
                            min = 2017, max = 2023, value = 2017,
                            step = 3,
                            animate = animationOptions(interval = 3000)),
-               tags$a("Descargar ficha en PDF", 
-                      href="FICHA IE ANP COSMOS Mariposa FINAL.pdf") 
+               uiOutput("dlURL") 
              ),
              
              # Right column: main visual outputs
@@ -390,6 +389,18 @@ server <- function(input, output, session) {
                          choices = sort(anp_names_list())
     )
   })
+  
+  # Updates technical note download link with selected ANP
+  anp_shortname <- reactive({
+    req(input$anp)
+    anp_selected_shortname <- cosmos_anps[cosmos_anps$ANP_name == input$anp, 
+                                       "ANP_shortname"]
+    return(paste0("ficha_",anp_selected_shortname,".pdf"))
+  })
+  output$dlURL <- renderUI({
+    tags$a("Descargar ficha en PDF", href=anp_shortname())
+  })
+  
   
   # Filters shapefile with selected ANP
   anp_selected <- reactive({
