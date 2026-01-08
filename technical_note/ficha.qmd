@@ -274,7 +274,11 @@ table_ie_alta_change <- df_dist %>%
   pivot_wider(names_from = "year",
               values_from = "pct",
               names_prefix = "ie_alta_") %>% 
-  mutate(ie_alta_diff = floor(ie_alta_2023 - ie_alta_2020),
+  mutate(ie_alta_diff = ie_alta_2023 - ie_alta_2020,
+         ie_alta_diff = case_when(
+           ie_alta_diff >= 0 ~ floor(ie_alta_diff),
+           ie_alta_diff < 0 ~ ceiling(ie_alta_diff)
+         ),
          ie_alta_diff_symbol = case_when(
            ie_alta_diff > 0 ~ "$\\uparrow$",
            ie_alta_diff < 0 ~ "$\\downarrow$",
@@ -294,7 +298,11 @@ table_presion_change <- df_dist %>%
   pivot_wider(names_from = "year",
               values_from = "pct",
               names_prefix = "pres_") %>% 
-  mutate(pres_diff = floor(pres_2023 - pres_2020),
+  mutate(pres_diff = pres_2023 - pres_2020,
+         pres_diff = case_when(
+           pres_diff >= 0 ~ floor(pres_diff),
+           pres_diff < 0 ~ ceiling(pres_diff)
+         ),
          pres_diff_symbol = case_when(
            pres_diff > 0 ~ "$\\uparrow$",
            pres_diff < 0 ~ "$\\downarrow$",
@@ -314,7 +322,11 @@ table_efectividad_change <- df_efectividad %>%
   pivot_wider(names_from = "year",
               values_from = "efectividad",
               names_prefix = "ef_") %>%
-  mutate(ef_diff = floor(ef_2023 - ef_2020),
+  mutate(ef_diff = ef_2023 - ef_2020,
+         ef_diff = case_when(
+           ef_diff >= 0 ~ floor(ef_diff),
+           ef_diff < 0 ~ ceiling(ef_diff)
+         ),
          ef_diff_symbol = case_when(
            ef_diff > 0 ~ "$\\uparrow$",
            ef_diff < 0 ~ "$\\downarrow$",
@@ -341,7 +353,11 @@ table_ie_alta_change_com <- df_dist_com %>%
   pivot_wider(names_from = "year",
               values_from = "pct",
               names_prefix = "ie_alta_") %>% 
-  mutate(ie_alta_diff = floor(ie_alta_2023 - ie_alta_2020),
+  mutate(ie_alta_diff = ie_alta_2023 - ie_alta_2020,
+         ie_alta_diff = case_when(
+           ie_alta_diff >= 0 ~ floor(ie_alta_diff),
+           ie_alta_diff < 0 ~ ceiling(ie_alta_diff)
+         ),
          ie_alta_diff_symbol = case_when(
            ie_alta_diff > 0 ~ "$\\uparrow$",
            ie_alta_diff < 0 ~ "$\\downarrow$",
@@ -361,7 +377,11 @@ table_presion_change_com <- df_dist_com %>%
   pivot_wider(names_from = "year",
               values_from = "pct",
               names_prefix = "pres_") %>% 
-  mutate(pres_diff = floor(pres_2023 - pres_2020),
+  mutate(pres_diff = pres_2023 - pres_2020,
+         pres_diff = case_when(
+           pres_diff >= 0 ~ floor(pres_diff),
+           pres_diff < 0 ~ ceiling(pres_diff)
+         ),
          pres_diff_symbol = case_when(
            pres_diff > 0 ~ "$\\uparrow$",
            pres_diff < 0 ~ "$\\downarrow$",
@@ -381,7 +401,11 @@ table_efectividad_change_com <- df_efectividad_com %>%
   pivot_wider(names_from = "year",
               values_from = "efectividad",
               names_prefix = "ef_") %>%
-  mutate(ef_diff = floor(ef_2023 - ef_2020),
+  mutate(ef_diff = ef_2023 - ef_2020,
+         ef_diff = case_when(
+           ef_diff >= 0 ~ floor(ef_diff),
+           ef_diff < 0 ~ ceiling(ef_diff)
+         ),
          ef_diff_symbol = case_when(
            ef_diff > 0 ~ "$\\uparrow$",
            ef_diff < 0 ~ "$\\downarrow$",
@@ -409,9 +433,12 @@ colores <- c(
 ```
 
 # Diagnóstico de Integridad Ecosistémica (IE) en el ANP `r anp_name` y su complejo
+
 ## Año: 2023
 
 ```{r map, echo=FALSE, message=FALSE, results='hide'}
+#| dev: png
+#| dpi: 300
 #| fig-height: 3.8
 
 # IE raster
@@ -988,7 +1015,7 @@ El Índice de Integridad Ecosistémica (IIE) informa sobre el grado de conservac
 
 ### **Método del cálculo del Índice de Integridad Ecosistémica**
 
-El IIE se basa en la variable $hemerobia$, cuya clasificación originalmente consta de 18 clases (Equihua et al 2018). Ésta fue actualizada dado los cambios en la nomenclatura de las clases de vegetación y cuerpos de agua de la Serie VII de INEGI, cuyo mapa es comparado con el de $vegetación$ $primaria$ para obtener el IIE.
+El IIE se basa en la variable $hemerobia$, cuya clasificación originalmente consta de 18 clases (Equihua et al 2018). Ésta fue actualizada dado los cambios en la nomenclatura de las clases de vegetación y cuerpos de agua de la Serie VII de INEGI, cuyo mapa es comparado con el de vegetación primaria para obtener el IIE.
 
 Para la mejor comprensión de los estados de IE y efectividad las 16 clases resultantes, se recategorizaron en 4: $IE_{alta}$, $IE_{media}$, $IE_{baja}$, $IE_{muy baja}$ (CONABIO, 2025).
 

@@ -234,9 +234,9 @@ ui <- navbarPage(
                fluidRow(
                  column(
                    width = 12,
-                   h4("Efectividad", class = "custom-heading"),
+                   h4("Eficacia", class = "custom-heading"),
                    plotOutput("ie_timeseries_efectividad", height = "300px"),
-                   markdown("La efectividad es el resultado de dividir el % de
+                   markdown("La Eficacia es el resultado de dividir el % de
                             IE alta de la ANP entre el de la zona de influencia.")
                  )
                )
@@ -329,15 +329,15 @@ ui <- navbarPage(
                       Ésta se define para cada ANP de acuerdo a sus características 
                      o como un buffer de 20km."),
             markdown("- También se puede observar la distribución del IIE a lo largo del tiempo."),
-            markdown("- Por último, se muestra la efectividad de la ANP a lo largo del tiempo. 
+            markdown("- Por último, se muestra la Eficacia de la ANP a lo largo del tiempo. 
                         Ésta se estima como el cociente del porcentaje de IE alta de la ANP 
                         entre el de la zona de influencia.
                         <br>
-                        a) Efectividad > 1 ANP tiene mayor proporción de IE alta que la zona de influencia
+                        a) Eficacia > 1 ANP tiene mayor proporción de IE alta que la zona de influencia
                         <br>
-                        b) Efectividad = 1 ANP tiene igual proporción de IE alta que la zona de influencia
+                        b) Eficacia = 1 ANP tiene igual proporción de IE alta que la zona de influencia
                         <br>
-                        c) Efectividad < 1 ANP tiene menor proporción de IE alta que la zona de influencia")
+                        c) Eficacia < 1 ANP tiene menor proporción de IE alta que la zona de influencia")
 
           )
         )
@@ -724,7 +724,7 @@ server <- function(input, output, session) {
     ggplot(df_efectividad, aes(x = year, y = efectividad)) +
       geom_line(color="blue") +
       geom_point(color="blue") +
-      labs(x = NULL, y = "Efectividad") +
+      labs(x = NULL, y = "Eficacia") +
       scale_x_continuous(breaks = c(2017, 2020, 2023)) +
       geom_hline(yintercept=1, linetype="dashed", color = "red") +
       theme_classic(base_size = 18)
