@@ -1,7 +1,7 @@
 ---
 format: 
   pdf:
-    include-in-header: header.tex
+    include-in-header: header_cosmos.tex
     pdf-engine: xelatex
     classoption: [twocolumn, landscape]
     fontsize: 11pt
@@ -9,6 +9,7 @@ format:
 editor: visual
 params:
   anp_name: "Mariposa Monarca"
+  project_name: "cosmos"
 ---
 
 ```{r define-colorize, echo=FALSE}
@@ -132,11 +133,18 @@ library(kableExtra)
 library(RColorBrewer)
 
 anp_name <- params$anp_name
+project_name <- params$project_name
 
 # Input
 buffer_folder <- "/Users/kasanchez/Documents/ie_dashboard/data/Zonas de Influencia_Vectores/"
 anp_shp <- vect('/Users/kasanchez/Documents/ie_dashboard/data/anp/186ANP_ITRF08_19012023.shp')
-df_cosmos_anps <- read.csv('/Users/kasanchez/Documents/ie_dashboard/data/anp_cosmos/cosmos_anps.csv')
+
+if(project_name == "cosmos"){
+  df_cosmos_anps <- read.csv('/Users/kasanchez/Documents/ie_dashboard/data/anp_cosmos/cosmos_anps.csv')
+} else(
+    df_cosmos_anps <- read.csv('/Users/kasanchez/Documents/ie_dashboard/data/anp_sym/sym_anps.csv')
+)
+
 col_palette <- brewer.pal(4, "RdYlBu")
 
 complejo_name <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp_name,"Complejo"]
@@ -156,16 +164,30 @@ for(anp in df_cosmos_anps$ANP_name) {
     
     # Get ANP IE raster
     ie <- rast(paste0('/Users/kasanchez/Documents/ie_dashboard/data/ie/ie_xgb_',y,'.tif'))
+    anp_selected_shp <- project(subset(anp_shp, anp_shp$NOMBRE == anp), crs(ie))
     ie_anp <- crop(ie, 
-                   project(subset(anp_shp, anp_shp$NOMBRE == anp), crs(ie)), 
+                   anp_selected_shp, 
                    mask=TRUE)
     
     # Get periphery IE raster
-    anp_selected_buffer <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp, 
+    if(project_name == "cosmos"){
+      anp_selected_buffer <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp, 
                                           "Buffer_file"]
-    periphery <- buffer_list[[anp_selected_buffer]]
-    periphery <- project(periphery, crs(ie))
-    ie_periphery <- crop(ie, periphery, mask=TRUE)
+      
+      periphery <- buffer_list[[anp_selected_buffer]]
+      periphery <- project(periphery, crs(ie))
+      
+      ie_periphery <- crop(ie, periphery, mask=TRUE)
+      
+    }else{
+      ie_anp_periphery <- crop(ie, 
+                               buffer(anp_selected_shp, 20000), 
+                               mask=TRUE)
+      ie_periphery <- mask(ie_anp_periphery,
+                           anp_selected_shp,
+                           inverse = TRUE)
+      names(ie_periphery) <- "prediction"
+    }
     
     # Transform ANP and periphery rasters to dataframe
     df_ie <- rbind(data.frame(ie = as.data.frame(ie_anp, 
@@ -450,11 +472,24 @@ anp_selected <- project(subset(anp_shp, anp_shp$NOMBRE == anp_name),crs(ie))
 ie_anp <- crop(ie, anp_selected, mask=TRUE)
 
 # IE raster of periphery
-anp_selected_buffer <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp_name, 
-                                   "Buffer_file"]
-periphery <- buffer_list[[anp_selected_buffer]]
-periphery <- project(periphery, crs(ie))
-ie_periphery <- crop(ie, periphery, mask=TRUE)
+if(project_name == "cosmos"){
+      anp_selected_buffer <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp, 
+                                          "Buffer_file"]
+      
+      periphery <- buffer_list[[anp_selected_buffer]]
+      periphery <- project(periphery, crs(ie))
+      
+      ie_periphery <- crop(ie, periphery, mask=TRUE)
+      
+}else{
+      ie_anp_periphery <- crop(ie, 
+                               buffer(anp_selected, 20000), 
+                               mask=TRUE)
+      ie_periphery <- mask(ie_anp_periphery,
+                           anp_selected,
+                           inverse = TRUE)
+      names(ie_periphery) <- "prediction"
+}
 
 # Merge IE rasters
 r_ie <- merge(ie_anp, ie_periphery)
@@ -967,7 +1002,7 @@ Dado el estado de conservación de la IE en el ANP y la tendencia descrita entre
 
 ## IMPORTANTE
 
-Para comprender el estado de una ANP es importante considerar los tres indicadores en conjunto, tanto el Estado de Integridad Ecosistémica y Eficacia del ANP, como la Presión que sufre el ANP en su ZI, así como revisar el estado de las ANP aledañas en el mismo complejo pues son comparables por estar localizadas en la misma zona bajo impactos antropogénicos y condiciones económicas y sociales similares.
+Para comprender el estado de una ANP es importante considerar los tres indicadores en conjunto, tanto el Estado de Integridad Ecosistémica, como la Eficacia del ANP y la Presión que presenta la ZI del ANP. Así mismo, se recomienda revisar el estado de las ANP aledañas en el mismo complejo pues son comparables por estar localizadas en la misma zona bajo impactos antropogénicos y condiciones económicas y sociales similares.
 
 ## CÁLCULO DE INDICADORES
 
@@ -1017,7 +1052,7 @@ El Índice de Integridad Ecosistémica (IIE) informa sobre el grado de conservac
 
 El IIE se basa en la variable $hemerobia$, cuya clasificación originalmente consta de 18 clases (Equihua et al 2018). Ésta fue actualizada dado los cambios en la nomenclatura de las clases de vegetación y cuerpos de agua de la Serie VII de INEGI, cuyo mapa es comparado con el de vegetación primaria para obtener el IIE.
 
-Para la mejor comprensión de los estados de IE y efectividad las 16 clases resultantes, se recategorizaron en 4: $IE_{alta}$, $IE_{media}$, $IE_{baja}$, $IE_{muy baja}$ (CONABIO, 2025).
+Para la mejor comprensión de los estados de IE y eficacia las 16 clases resultantes, se recategorizaron en 4: $IE_{alta}$, $IE_{media}$, $IE_{baja}$, $IE_{muy baja}$ (CONABIO, 2025).
 
 La clase alta ($IE_{alta}$) representa a la vegetación natural (primaria) remanente en el país representada por las clases 0 a la 4 de la $hemerobia$. Ésta es tomada como referencia para estimar los indicadores de estado, presión y eficacia.
 
@@ -1032,6 +1067,10 @@ Cobertura del suelo (MODIS, NASA LP DAAC), productividad primaria bruta (fotosí
 #### **Validación**
 
 Fauna indicadora clave (SiPeCaM).
+
+## **Agradecimientos**
+
+*Estas acciones/logros son posibles gracias al apoyo del proyecto Conservación y Uso Sostenible en Montañas y Sierras (CoSMoS), una iniciativa respaldada por la Cooperación Alemana a través de KfW, implementada en coordinación entre CONANP, CONABIO y FMCN.*
 
 ## **Referencia**
 

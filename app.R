@@ -22,6 +22,7 @@ names(raster_list) <- gsub('data/ie//ie_xgb_','',
 anp_file <- vect('data/anp/186ANP_ITRF08_19012023.shp')
 anp_file <-  project(anp_file, crs(raster_list['2017']))
 cosmos_anps <- read.csv('data/anp_cosmos/cosmos_anps.csv')
+sym_anps <- read.csv('data/anp_sym/sym_anps.csv')
 
 # Read influence zones
 buffer_folder <- "data/Zonas de Influencia_Vectores/"
@@ -29,21 +30,7 @@ buffer_files <- list.files(buffer_folder, pattern = "\\.shp$", full.names = TRUE
 buffer_list <- lapply(buffer_files, vect)
 names(buffer_list) <- tools::file_path_sans_ext(basename(buffer_files))
 
-
-v_norte <- c("Cañón de Santa Elena",
-             "Ocampo",
-             "Maderas del Carmen",
-             "C.A.D.N.R. 004 Don Martín")
-v_centro <- c("Sierra del Abra Tanchipa",
-              "Sierra Gorda",
-              "Z.P.F.V. la Cuenca Hidrográfica del Río Necaxa",
-              "Pico de Orizaba",
-              "Cofre de Perote o Nauhcampatépetl")
-v_sur <- c("Los Tuxtlas",
-           "Pantanos de Centla",
-           "Cañón del Usumacinta")
-myt_anps <- c(v_norte, v_centro, v_sur)
-anp_file <- anp_file[anp_file$NOMBRE %in% myt_anps |
+anp_file <- anp_file[anp_file$NOMBRE %in% sym_anps$ANP_name |
                        anp_file$NOMBRE %in% cosmos_anps$ANP_name]
 
 col_pal <- brewer.pal(4, "RdYlGn")
@@ -255,13 +242,19 @@ ui <- navbarPage(
           tags$div(
             class = "card p-3 shadow-sm mb-4",
             tags$h4("Integridad ecosistémica", class = "custom-heading"),
-            markdown("El Índice de Integridad ecosistémica (IIE) se estima a partir 
+            markdown("El Índice de Integridad Ecosistémica (IIE) muestra el grado de 
+                     transformación de la vegetación natural de los ecosistemas, 
+                     respecto a su situación actual. Para estimarlo se comparó 
+                     la vegetación primaria (vegetación antes de los grandes 
+                     cambios antropogénicos) con el mapa de uso de suelo y 
+                     vegetación de INEGI 2017."),
+            markdown("El IIE para un año diferente a 2017, se estima a partir 
             de un modelo XGBoost, que considera como variables predictoras las 
             zonas de vida de Holdridge y la elevación, como factores de las 
             condiciones bioclimáticas. La condición de la vegetación se incluyó 
-            al modelo mediante datos de fotosíntesis y datos de radar. También 
-            se consideró la cobertura terrestre, que identifica distintos tipos 
-            relacionados a cierta integridad ecosistémica, como cultivos y 
+            al modelo mediante datos de fotosíntesis y datos de radar Sentinel-1.
+            También se consideró la cobertura terrestre, que identifica distintos 
+            tipos relacionados a cierta integridad ecosistémica, como cultivos y 
             asentamientos urbanos. Con base en esto, el modelo predice el IIE 
             anual de todo el territorio Mexicano, donde 0 es el estado más 
             íntegro y el 15 el más degradado.")
@@ -324,20 +317,35 @@ ui <- navbarPage(
                       al porcentaje de área con IE alta."),
             markdown("- La distribución de las cuatro categorías de IIE
                       del Área Natural Protegida (ANP) es comparada
-                      con la distribución de su zona de influencia. 
+                      con la distribución de su Zona de Influencia (ZI). 
                       Ésta se define para cada ANP de acuerdo a sus características 
                      o como un buffer de 20km."),
             markdown("- También se puede observar la distribución del IIE a lo largo del tiempo."),
             markdown("- Por último, se muestra la Eficacia de la ANP a lo largo del tiempo. 
                         Ésta se estima como el cociente del porcentaje de IE alta de la ANP 
-                        entre el de la zona de influencia.
+                        entre el de la Zona de Influencia.
                         <br>
-                        a) Eficacia > 1 ANP tiene mayor proporción de IE alta que la zona de influencia
+                        a) Eficacia > 1 ANP tiene mayor proporción de IE alta que la Zona de Influencia
                         <br>
-                        b) Eficacia = 1 ANP tiene igual proporción de IE alta que la zona de influencia
+                        b) Eficacia = 1 ANP tiene igual proporción de IE alta que la Zona de Influencia
                         <br>
-                        c) Eficacia < 1 ANP tiene menor proporción de IE alta que la zona de influencia")
+                        c) Eficacia < 1 ANP tiene menor proporción de IE alta que la Zona de Influencia")
 
+          )
+        )
+      ),
+      fluidRow(
+        column(
+          width = 12,
+          tags$div(
+            class = "card p-3 shadow-sm mb-4",
+            tags$h4("Agradecimientos", class = "custom-heading"),
+            markdown("Estas acciones/logros son posibles gracias al apoyo del 
+                     proyecto Conservación y Uso Sostenible en Montañas y Sierras 
+                     (CoSMoS), una iniciativa respaldada por la Cooperación Alemana 
+                     a través de KfW, implementada en coordinación entre CONANP, 
+                     CONABIO y FMCN.")
+            
           )
         )
       )
@@ -375,7 +383,7 @@ server <- function(input, output, session) {
                                anp_file$NOMBRE %in% cosmos_anps$ANP_name)$NOMBRE
     }else if(input$filtrar_anps=="Sierra y Mar"){
       anp_names_list <- subset(anp_file, 
-                               anp_file$NOMBRE %in% myt_anps)$NOMBRE
+                               anp_file$NOMBRE %in% sym_anps$ANP_name)$NOMBRE
     }else{
       anp_names_list <- anp_file$NOMBRE
       }
@@ -393,8 +401,13 @@ server <- function(input, output, session) {
   # Updates technical note download link with selected ANP
   anp_shortname <- reactive({
     req(input$anp)
-    anp_selected_shortname <- cosmos_anps[cosmos_anps$ANP_name == input$anp, 
-                                       "ANP_shortname"]
+    if(input$anp %in% cosmos_anps$ANP_name){
+      anp_selected_shortname <- cosmos_anps[cosmos_anps$ANP_name == input$anp, 
+                                         "ANP_shortname"]
+    } else if (input$anp %in% sym_anps$ANP_name) {
+      anp_selected_shortname <- sym_anps[sym_anps$ANP_name == input$anp, 
+                                            "ANP_shortname"]
+    }
     return(paste0("ficha_",anp_selected_shortname,".pdf"))
   })
   output$dlURL <- renderUI({
