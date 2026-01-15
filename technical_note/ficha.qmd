@@ -100,10 +100,10 @@ text3 <- function(ef_anp, ef_com){
   
   ef_anp <- ifelse(ef_anp <= 1, 1, 
                    ifelse(ef_anp <= 2, 2,
-                          ifelse(ef_anp <= 3, 4, 4)))
+                          ifelse(ef_anp <= 3, 3, 4)))
   ef_com <- ifelse(ef_com <= 1, 1, 
                    ifelse(ef_com <= 2, 2,
-                          ifelse(ef_com <= 3, 4, 4)))
+                          ifelse(ef_com <= 3, 3, 4)))
   
   diff_value <- ef_com - ef_anp
   
@@ -473,7 +473,7 @@ ie_anp <- crop(ie, anp_selected, mask=TRUE)
 
 # IE raster of periphery
 if(project_name == "cosmos"){
-      anp_selected_buffer <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp, 
+      anp_selected_buffer <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp_name, 
                                           "Buffer_file"]
       
       periphery <- buffer_list[[anp_selected_buffer]]
@@ -594,7 +594,7 @@ df_dist %>%
 
 ## ![](img/IE.png){width="65" height="61"} Estado de la Integridad Ecosistémica ($EIE$)
 
-```{r ie-alta-chenge-table, echo=FALSE}
+```{r ie-alta-change-table, echo=FALSE}
 #| layout-ncol: 2
 
 # Table on the left
@@ -998,7 +998,7 @@ El `r complejo_name` tiene:
 
 El ANP `r anp_name` presenta un estado de `r color_ie_alta(ie_alta_anp)`, `r color_efectividad(efectividad_anp)` y `r color_presion(presion_anp)`. Esto significa que `r text1(ie_alta_anp)` de Conservación muy alta y mantener el monitoreo del estado de IE del ANP y su Zona de Influencia (ZI).
 
-Dado el estado de conservación de la IE en el ANP y la tendencia descrita entre el 2020 y 2023, es deseable que la tendencia en el estado de la Conservación `r text2(ie_alta_anp_diff)` y la tendencia de la eficacia `r text2(efectividad_anp_diff)`. Las otras ANP del complejo presentan una `r color_efectividad(efectividad_com_noANP)`, es decir que son `r text3(efectividad_anp, efectividad_com)`.
+Dado el estado de conservación de la IE en el ANP y la tendencia descrita entre el 2020 y 2023, es deseable que la tendencia en el estado de la Conservación `r text2(ie_alta_anp_diff)` y la tendencia de la eficacia `r text2(efectividad_anp_diff)`. Las otras ANP del complejo presentan una `r color_efectividad(efectividad_com_noANP)`, es decir que son `r text3(efectividad_anp,efectividad_com_noANP)`.
 
 ## IMPORTANTE
 
