@@ -8,7 +8,7 @@ format:
     colorlinks: true
 editor: visual
 params:
-  anp_name: "Mariposa Monarca"
+  anp_name: "Ciénegas del Lerma"
   project_name: "cosmos"
 ---
 
@@ -137,7 +137,16 @@ project_name <- params$project_name
 
 # Input
 buffer_folder <- "/Users/kasanchez/Documents/ie_dashboard/data/Zonas de Influencia_Vectores/"
-anp_shp <- vect('/Users/kasanchez/Documents/ie_dashboard/data/anp/186ANP_ITRF08_19012023.shp')
+anp_shp <- vect('/Users/kasanchez/Documents/ie_dashboard/data/anp/232_ANP-ITRF08_04072025.shp')
+
+# Update Cienegas de Lerma shapefile
+lerma_shp <- vect('/Users/kasanchez/Documents/ie_dashboard/data/anp/cienegas_lerma/Subzon_CLerma_utmitrf08_DOFPM.shp')
+lerma_shp <-  project(lerma_shp, crs(anp_shp))
+lerma_shp <- aggregate(lerma_shp)
+values(lerma_shp) <- values(anp_shp[anp_shp$NOMBRE == "Ciénegas del Lerma"])
+anp_shp <- anp_shp[anp_shp$NOMBRE != "Ciénegas del Lerma"]
+anp_shp <- rbind(anp_shp, lerma_shp)
+
 
 if(project_name == "cosmos"){
   df_cosmos_anps <- read.csv('/Users/kasanchez/Documents/ie_dashboard/data/anp_cosmos/cosmos_anps.csv')

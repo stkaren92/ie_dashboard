@@ -1,0 +1,1129 @@
+---
+format: 
+  pdf:
+    include-in-header: header_cosmos.tex
+    pdf-engine: xelatex
+    classoption: [twocolumn, landscape]
+    fontsize: 11pt
+    colorlinks: true
+editor: visual
+params:
+  anp_name: "Ciénegas del Lerma"
+  project_name: "cosmos"
+---
+
+```{r define-colorize, echo=FALSE}
+color_ie_alta <- function(ie_alta_anp) {
+  if (ie_alta_anp <= 25) {
+    estado <- "Conservación baja"
+    color <- gsub("#", "", col_palette[1])
+  } else if (ie_alta_anp <= 50) {
+    estado <- "Conservación media"
+    color <- gsub("#", "", col_palette[2])
+  } else if (ie_alta_anp <= 75) {
+    estado <- "Conservación alta"
+    color <- gsub("#", "", col_palette[3])
+  } else {
+    estado <- "Conservación muy alta"
+    color <- gsub("#", "", col_palette[4])
+  }
+  sprintf("\\textcolor[HTML]{%s}{%s}", color, estado)
+}
+
+color_presion <- function(presion_anp) {
+  if (presion_anp <= 25) {
+    estado <- "Presión baja"
+    color <- gsub("#", "", col_palette[4])
+  } else if (presion_anp <= 50) {
+    estado <- "Presión moderada"
+    color <- gsub("#", "", col_palette[3])
+  } else if (presion_anp <= 75) {
+    estado <- "Presión alta"
+    color <- gsub("#", "", col_palette[2])
+  } else {
+    estado <- "Presión muy alta"
+    color <- gsub("#", "", col_palette[1])
+  }
+  sprintf("\\textcolor[HTML]{%s}{%s}", color, estado)
+}
+
+color_efectividad <- function(efectividad_anp) {
+  if (efectividad_anp <= 1) {
+    estado <- "Sin eficacia"
+    color <- gsub("#", "", col_palette[1])
+  } else if (efectividad_anp <= 2) {
+    estado <- "Eficacia parcial"
+    color <- gsub("#", "", col_palette[2])
+  } else if (efectividad_anp <= 3) {
+    estado <- "Eficacia alta"
+    color <- gsub("#", "", col_palette[3])
+  } else {
+    estado <- "Eficacia sobresaliente"
+    color <- gsub("#", "", col_palette[4])
+  }
+  sprintf("\\textcolor[HTML]{%s}{%s}", color, estado)
+}
+
+diff_text <- function(diff_value){
+  if(diff_value > 0) {
+    "en incremento"
+  } else if(diff_value < 0) {
+    "en decremento"
+  } else {
+    "igual que el periodo anterior"
+  }
+}
+
+
+text1 <- function(ie_value){
+  if(ie_value <= 50) {
+    "hay un grado de grado de preocupación alto en el ANP, por lo que se recomienda alcanzar un estado"
+  } else if(ie_value <= 75) {
+    "si bien hay un grado de preocupación menor en el ANP, se recomenda alcanzar un estado"
+  } else {
+    "si bien hay un grado de preocupación menor en el ANP, se recomienda mantener un estado"
+  }
+}
+
+text2 <- function(diff_value){
+  if(diff_value > 0) {
+    "se mantenga en aumento"
+  } else if(diff_value < 0) {
+    "se revierta"
+  } else {
+    "cambie a mantenerse en aumento"
+  }
+}
+
+
+text3 <- function(ef_anp, ef_com){
+  
+  ef_anp <- ifelse(ef_anp <= 1, 1, 
+                   ifelse(ef_anp <= 2, 2,
+                          ifelse(ef_anp <= 3, 3, 4)))
+  ef_com <- ifelse(ef_com <= 1, 1, 
+                   ifelse(ef_com <= 2, 2,
+                          ifelse(ef_com <= 3, 3, 4)))
+  
+  diff_value <- ef_com - ef_anp
+  
+  if(diff_value > 0) {
+    sprintf("más eficaces que el ANP %s, por lo que las acciones dentro de ésta muestran ser insuficientes a las realizadas en las ANP que pertenecen al mismo complejo", anp_name)
+  } else if(diff_value < 0) {
+    sprintf("menos eficaces que el ANP %s, por lo que las acciones dentro de ésta muestran ser mejores a las realizadas en las ANP que pertenecen al mismo complejo", anp_name)
+  } else {
+    sprintf("igualmente eficaces que el ANP %s, por lo que las acciones dentro de ésta muestran ser similares a las realizadas en las ANP que pertenecen al mismo complejo", anp_name)
+  }
+}
+
+```
+
+```{r load-data, echo=FALSE, message=FALSE, results='hide', warning = FALSE}
+
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(ggpattern)
+library(terra)
+library(tidyterra)
+library(sf)
+library(maptiles)
+library(knitr)
+library(kableExtra)
+library(RColorBrewer)
+
+anp_name <- params$anp_name
+project_name <- params$project_name
+
+# Input
+buffer_folder <- "/Users/kasanchez/Documents/ie_dashboard/data/Zonas de Influencia_Vectores/"
+anp_shp <- vect('/Users/kasanchez/Documents/ie_dashboard/data/anp/232_ANP-ITRF08_04072025.shp')
+
+# Update Cienegas de Lerma shapefile
+lerma_shp <- vect('/Users/kasanchez/Documents/ie_dashboard/data/anp/cienegas_lerma/Subzon_CLerma_utmitrf08_DOFPM.shp')
+lerma_shp <-  project(lerma_shp, crs(anp_shp))
+lerma_shp <- aggregate(lerma_shp)
+values(lerma_shp) <- values(anp_shp[anp_shp$NOMBRE == "Ciénegas del Lerma"])
+anp_shp <- anp_shp[anp_shp$NOMBRE != "Ciénegas del Lerma"]
+anp_shp <- rbind(anp_shp, lerma_shp)
+
+
+if(project_name == "cosmos"){
+  df_cosmos_anps <- read.csv('/Users/kasanchez/Documents/ie_dashboard/data/anp_cosmos/cosmos_anps.csv')
+} else(
+    df_cosmos_anps <- read.csv('/Users/kasanchez/Documents/ie_dashboard/data/anp_sym/sym_anps.csv')
+)
+
+col_palette <- brewer.pal(4, "RdYlBu")
+
+complejo_name <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp_name,"Complejo"]
+anp_shortname <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp_name,"ANP_shortname"]
+
+# Load buffer shapefiles on a named list
+buffer_files <- list.files(buffer_folder, pattern = "\\.shp$", full.names = TRUE)
+buffer_list <- lapply(buffer_files, vect)
+names(buffer_list) <- tools::file_path_sans_ext(basename(buffer_files))
+
+# Iterate through ANPs and years
+# to get the IE values of each pixel of the ANP
+# and its periphery
+df_ie_total <- data.frame()
+for(anp in df_cosmos_anps$ANP_name) {
+  for(y in c(2020,2023)){
+    
+    # Get ANP IE raster
+    ie <- rast(paste0('/Users/kasanchez/Documents/ie_dashboard/data/ie/ie_xgb_',y,'.tif'))
+    anp_selected_shp <- project(subset(anp_shp, anp_shp$NOMBRE == anp), crs(ie))
+    ie_anp <- crop(ie, 
+                   anp_selected_shp, 
+                   mask=TRUE)
+    
+    # Get periphery IE raster
+    if(project_name == "cosmos"){
+      anp_selected_buffer <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp, 
+                                          "Buffer_file"]
+      
+      periphery <- buffer_list[[anp_selected_buffer]]
+      periphery <- project(periphery, crs(ie))
+      
+      ie_periphery <- crop(ie, periphery, mask=TRUE)
+      
+    }else{
+      ie_anp_periphery <- crop(ie, 
+                               buffer(anp_selected_shp, 20000), 
+                               mask=TRUE)
+      ie_periphery <- mask(ie_anp_periphery,
+                           anp_selected_shp,
+                           inverse = TRUE)
+      names(ie_periphery) <- "prediction"
+    }
+    
+    # Transform ANP and periphery rasters to dataframe
+    df_ie <- rbind(data.frame(ie = as.data.frame(ie_anp, 
+                                                 xy = FALSE)$prediction, 
+                              location = 'anp'),
+                   data.frame(ie = as.data.frame(ie_periphery,
+                                                 xy = FALSE)$prediction, 
+                              location = 'periphery'))
+    
+    # Set IE categorical values
+    df_ie <- df_ie %>% 
+      mutate(ie_4cat = ifelse(ie <= 4, "IE alta",
+                              ifelse(ie <= 9, "IE media",
+                                     ifelse(ie <= 13, "IE baja", "IE muy baja"))))
+    
+    df_ie$anp_name <- anp
+    df_ie$year <- y
+    
+    df_ie_total <- rbind(df_ie_total, df_ie)
+  }
+}
+# Join ANP short name
+df_ie_total <- df_ie_total %>% 
+  left_join(df_cosmos_anps %>% 
+              select(ANP_name,ANP_shortname,Complejo),
+            by=c("anp_name"="ANP_name"))
+
+#### By ANP ####
+# Get the IE % distribution
+df_ie_pct <- df_ie_total %>% 
+  count(Complejo,ANP_shortname,anp_name, 
+        year, 
+        location, 
+        ie_4cat, name = "pct") %>% 
+  group_by(Complejo, ANP_shortname, anp_name, 
+           year, 
+           location) %>% 
+  mutate(pct = pct / sum(pct)) %>% 
+  ungroup()
+
+# Get IE % distribution dataframe of selected ANPs
+df_dist <- df_ie_pct %>% 
+  filter(Complejo == complejo_name) %>% 
+  mutate(year = factor(year,
+                       levels = c("2023","2020")),
+         ie_4cat = factor(ie_4cat,
+                          levels = c("IE muy baja",
+                                     "IE baja",
+                                     "IE media",
+                                     "IE alta")),
+         location_name = ifelse(location == "anp",
+                                "ANP", "Zona de influencia"))
+
+# Get effectivity dataframe of selected ANPs
+df_efectividad <- df_ie_pct %>%
+  filter(Complejo == complejo_name) %>% 
+  tidyr::pivot_wider(names_from = location, values_from = pct) %>%
+  replace(is.na(.), 0) %>% 
+  filter(ie_4cat == "IE alta") %>% 
+  mutate(efectividad = anp/periphery)
+
+# Reorder ANPs by IEalta 2023
+df_aux <- df_dist %>% 
+  filter(ie_4cat == "IE alta" &
+           location == "anp" &
+           year == "2023")
+df_dist <- df_dist %>% 
+  mutate(ANP_shortname = factor(ANP_shortname,
+                                levels = levels(fct_reorder(df_aux$ANP_shortname, 
+                                                            desc(df_aux$pct)))))
+df_efectividad <- df_efectividad %>% 
+  mutate(ANP_shortname = factor(ANP_shortname,
+                                levels = levels(fct_reorder(df_aux$ANP_shortname, 
+                                                            (df_aux$pct)))))
+
+
+#### By complejo ####
+# Get IE % distribution dataframe by Complejo
+df_dist_com <- df_ie_total %>% 
+  count(Complejo,
+        year, 
+        location, 
+        ie_4cat, name = "pct") %>% 
+  group_by(Complejo,
+           year, 
+           location) %>% 
+  mutate(pct = pct / sum(pct)) %>% 
+  ungroup()
+
+# Get effectivity dataframe by Complejo
+df_efectividad_com <- df_dist_com %>%
+  tidyr::pivot_wider(names_from = location, values_from = pct) %>%
+  replace(is.na(.), 0) %>% 
+  filter(ie_4cat == "IE alta") %>% 
+  mutate(efectividad = anp/periphery)
+
+```
+
+```{r get-change-dataframes, echo=FALSE}
+
+#### By ANP ####
+table_ie_alta_change <- df_dist %>% 
+  filter(ie_4cat == "IE alta" & location == "anp") %>% 
+  mutate(pct = round(pct*100,1)) %>% 
+  select(ANP_shortname, year, pct) %>% 
+  pivot_wider(names_from = "year",
+              values_from = "pct",
+              names_prefix = "ie_alta_") %>% 
+  mutate(ie_alta_diff = ie_alta_2023 - ie_alta_2020,
+         ie_alta_diff = case_when(
+           ie_alta_diff >= 0 ~ floor(ie_alta_diff),
+           ie_alta_diff < 0 ~ ceiling(ie_alta_diff)
+         ),
+         ie_alta_diff_symbol = case_when(
+           ie_alta_diff > 0 ~ "$\\uparrow$",
+           ie_alta_diff < 0 ~ "$\\downarrow$",
+           ie_alta_diff == 0 ~ "="
+         ),
+         ie_alta_color = case_when(
+           ie_alta_2023 <= 25 ~ "baja",
+           ie_alta_2023 <= 50 ~ "media",
+           ie_alta_2023 <= 75 ~ "alta",
+           ie_alta_2023 > 75 ~ "muyalta",
+         ))
+
+table_presion_change <- df_dist %>% 
+  filter(ie_4cat == "IE alta" & location == "periphery") %>% 
+  mutate(pct = round(100-pct*100,1)) %>% 
+  select(ANP_shortname, year, pct) %>% 
+  pivot_wider(names_from = "year",
+              values_from = "pct",
+              names_prefix = "pres_") %>% 
+  mutate(pres_diff = pres_2023 - pres_2020,
+         pres_diff = case_when(
+           pres_diff >= 0 ~ floor(pres_diff),
+           pres_diff < 0 ~ ceiling(pres_diff)
+         ),
+         pres_diff_symbol = case_when(
+           pres_diff > 0 ~ "$\\uparrow$",
+           pres_diff < 0 ~ "$\\downarrow$",
+           pres_diff == 0 ~ "="
+         ),
+         pres_diff_color = case_when(
+           pres_2023 <= 25 ~ "muyalta",
+           pres_2023 <= 50 ~ "alta",
+           pres_2023 <= 75 ~ "media",
+           pres_2023 > 75 ~ "baja",
+         ))
+
+
+table_efectividad_change <- df_efectividad %>% 
+  select(ANP_shortname, year, efectividad) %>% 
+  mutate(efectividad = round(efectividad,1)) %>% 
+  pivot_wider(names_from = "year",
+              values_from = "efectividad",
+              names_prefix = "ef_") %>%
+  mutate(ef_diff = ef_2023 - ef_2020,
+         ef_diff = case_when(
+           ef_diff >= 0 ~ floor(ef_diff),
+           ef_diff < 0 ~ ceiling(ef_diff)
+         ),
+         ef_diff_symbol = case_when(
+           ef_diff > 0 ~ "$\\uparrow$",
+           ef_diff < 0 ~ "$\\downarrow$",
+           ef_diff == 0 ~ "="
+         ),
+         ef_diff_color = case_when(
+           ef_2023 <= 1 ~ "baja",
+           ef_2023 <= 2 ~ "media",
+           ef_2023 <= 3 ~ "alta",
+           ef_2023 > 3 ~ "muyalta",
+         ))
+
+table_change <- table_ie_alta_change %>% 
+  left_join(table_presion_change,
+            by="ANP_shortname") %>% 
+  left_join(table_efectividad_change,
+            by="ANP_shortname") 
+
+#### By complejo ####
+table_ie_alta_change_com <- df_dist_com %>% 
+  filter(ie_4cat == "IE alta" & location == "anp") %>% 
+  mutate(pct = round(pct*100,1)) %>% 
+  select(Complejo, year, pct) %>% 
+  pivot_wider(names_from = "year",
+              values_from = "pct",
+              names_prefix = "ie_alta_") %>% 
+  mutate(ie_alta_diff = ie_alta_2023 - ie_alta_2020,
+         ie_alta_diff = case_when(
+           ie_alta_diff >= 0 ~ floor(ie_alta_diff),
+           ie_alta_diff < 0 ~ ceiling(ie_alta_diff)
+         ),
+         ie_alta_diff_symbol = case_when(
+           ie_alta_diff > 0 ~ "$\\uparrow$",
+           ie_alta_diff < 0 ~ "$\\downarrow$",
+           ie_alta_diff == 0 ~ "="
+         ),
+         ie_alta_color = case_when(
+           ie_alta_2023 <= 25 ~ "baja",
+           ie_alta_2023 <= 50 ~ "media",
+           ie_alta_2023 <= 75 ~ "alta",
+           ie_alta_2023 > 75 ~ "muyalta",
+         ))
+
+table_presion_change_com <- df_dist_com %>% 
+  filter(ie_4cat == "IE alta" & location == "periphery") %>% 
+  mutate(pct = round(100-pct*100,1)) %>% 
+  select(Complejo, year, pct) %>% 
+  pivot_wider(names_from = "year",
+              values_from = "pct",
+              names_prefix = "pres_") %>% 
+  mutate(pres_diff = pres_2023 - pres_2020,
+         pres_diff = case_when(
+           pres_diff >= 0 ~ floor(pres_diff),
+           pres_diff < 0 ~ ceiling(pres_diff)
+         ),
+         pres_diff_symbol = case_when(
+           pres_diff > 0 ~ "$\\uparrow$",
+           pres_diff < 0 ~ "$\\downarrow$",
+           pres_diff == 0 ~ "="
+         ),
+         pres_diff_color = case_when(
+           pres_2023 <= 25 ~ "muyalta",
+           pres_2023 <= 50 ~ "alta",
+           pres_2023 <= 75 ~ "media",
+           pres_2023 > 75 ~ "baja",
+         ))
+
+
+table_efectividad_change_com <- df_efectividad_com %>% 
+  select(Complejo, year, efectividad) %>% 
+  mutate(efectividad = round(efectividad,1)) %>% 
+  pivot_wider(names_from = "year",
+              values_from = "efectividad",
+              names_prefix = "ef_") %>%
+  mutate(ef_diff = ef_2023 - ef_2020,
+         ef_diff = case_when(
+           ef_diff >= 0 ~ floor(ef_diff),
+           ef_diff < 0 ~ ceiling(ef_diff)
+         ),
+         ef_diff_symbol = case_when(
+           ef_diff > 0 ~ "$\\uparrow$",
+           ef_diff < 0 ~ "$\\downarrow$",
+           ef_diff == 0 ~ "="
+         ),
+         ef_diff_color = case_when(
+           ef_2023 <= 1 ~ "baja",
+           ef_2023 <= 2 ~ "media",
+           ef_2023 <= 3 ~ "alta",
+           ef_2023 > 3 ~ "muyalta",
+         ))
+
+table_change_com <- table_ie_alta_change_com %>% 
+  left_join(table_presion_change_com,
+            by="Complejo") %>% 
+  left_join(table_efectividad_change_com,
+            by="Complejo") 
+
+colores <- c(
+  "muyalta"  = col_palette[4],
+  "alta" = col_palette[3],
+  "media"  = col_palette[2],
+  "baja" = col_palette[1]
+)
+```
+
+
+
+# Diagnóstico de Integridad Ecosistémica (IE) en el ANP `r anp_name` y su complejo
+
+## Año: 2023
+
+
+
+```{r map, echo=FALSE, message=FALSE, results='hide'}
+#| dev: png
+#| dpi: 300
+#| fig-height: 3.8
+
+# IE raster
+ie <- rast('/Users/kasanchez/Documents/ie_dashboard/data/ie/ie_xgb_2023.tif')
+# ANP shapefile
+anp_selected <- project(subset(anp_shp, anp_shp$NOMBRE == anp_name),crs(ie))
+
+# IE raster of ANP
+ie_anp <- crop(ie, anp_selected, mask=TRUE)
+
+# IE raster of periphery
+if(project_name == "cosmos"){
+      anp_selected_buffer <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp_name, 
+                                          "Buffer_file"]
+      
+      periphery <- buffer_list[[anp_selected_buffer]]
+      periphery <- project(periphery, crs(ie))
+      
+      ie_periphery <- crop(ie, periphery, mask=TRUE)
+      
+}else{
+      ie_anp_periphery <- crop(ie, 
+                               buffer(anp_selected, 20000), 
+                               mask=TRUE)
+      ie_periphery <- mask(ie_anp_periphery,
+                           anp_selected,
+                           inverse = TRUE)
+      names(ie_periphery) <- "prediction"
+}
+
+# Merge IE rasters
+r_ie <- merge(ie_anp, ie_periphery)
+
+# Transform to 4 categories
+r_ie <- ifel(r_ie <= 4, 1,
+               ifel(r_ie <= 9, 2,
+                    ifel(r_ie <= 13, 3, 4)))
+  
+# Get the map tiles for the area
+tiles <- get_tiles(project(r_ie,"epsg:4326"), provider = "OpenStreetMap")
+tiles <- project(tiles, crs(r_ie))
+tiles <- crop(tiles, r_ie)
+
+# Plot with ggplot2 and geom_spatraster_rgb from tidyterra
+ggplot() +
+  geom_spatraster_rgb(data = tiles) +
+  geom_spatraster(
+    data = as.factor(r_ie)) +
+  geom_sf(
+    data = anp_selected,
+    fill = NA,
+    color = "black",
+    linewidth = 0.6
+  ) +
+  scale_fill_manual(
+    name = "Integridad Ecosistémica",
+    values = c(
+      "1" = "#1A9641",
+      "2" = "#A6D96A",
+      "3" = "#FDAE61",
+      "4" = "#D7191C"
+    ),
+    labels = c(
+      "1" = "IE alta",
+      "2" = "IE media",
+      "3" = "IE baja",
+      "4" = "IE muy baja"
+    ),
+    na.translate = F
+  ) +
+  coord_sf(expand = FALSE) +
+  theme_void() +
+  theme(
+    legend.position = "right",
+    axis.text  = element_blank(),
+    axis.ticks = element_blank(),
+    axis.title = element_blank()
+  )
+```
+
+```{r distribution-plot, echo=FALSE, message=FALSE, results='hide'}
+#| fig-height: 1.2
+
+ggplot(df_dist, 
+       aes(x = year, y = pct, fill = ie_4cat,  
+           alpha = year)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(x = NULL, y = NULL) +
+  coord_flip() +
+  facet_grid(rows = vars(ANP_shortname), 
+             switch = "y",
+             cols = vars(location_name)) +
+  scale_alpha_manual("Año",
+                     values = c("2020" = 0.4, "2023" = 1),
+                     breaks = c("2020","2023")
+  ) +
+  scale_fill_manual("IE",
+                    values = c("IE muy baja" = "#D7191C",
+                               "IE baja" = "#FDAE61",
+                               "IE media" = "#A6D96A",
+                               "IE alta" = "#1A9641")) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  theme_classic() +
+  theme(strip.text.y.left = element_text(angle = 0),
+        strip.text.y = element_text(hjust = 1),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        strip.background = element_blank(),
+        panel.spacing.x = unit(0.48, "cm"),
+        legend.title=element_blank(),
+        legend.spacing.y = unit(-0.1, "cm"),
+        legend.key.size = unit(0.2, "cm"))
+```
+
+```{r anp-shorname-table, echo=FALSE}
+df_dist %>%
+  select(ANP_shortname, anp_name) %>% 
+  distinct() %>% 
+  rename(ANP = anp_name,
+         Siglas = ANP_shortname) %>% 
+  kable(escape = FALSE, 
+        col.names = NULL,
+        align = c("l"), format = "latex",
+        booktabs = T) %>%
+  column_spec(2, width = "5.5cm") %>%
+  kable_styling(position = "left", 
+                latex_options = c("hold_position"),
+                font_size = 9,)
+```
+
+
+
+## ![](img/IE.png){width="65" height="61"} Estado de la Integridad Ecosistémica ($EIE$)
+
+
+
+```{r ie-alta-change-table, echo=FALSE}
+#| layout-ncol: 2
+
+# Table on the left
+table_change %>%
+  select(ANP_shortname, ie_alta_diff_symbol) %>% 
+  rename(ANP = ANP_shortname,
+        `EIE` = ie_alta_diff_symbol) %>% 
+  kable(escape = FALSE, align = c("l","c"), format = "latex",
+        booktabs = T) %>%
+  kable_styling(position = "center", 
+                latex_options = c("hold_position"),
+                font_size = 13) %>% 
+  column_spec(2, color = "white",
+              background = table_change %>%
+                pull(ie_alta_color) %>%
+                purrr::map_chr(~ colores[.x]))
+
+
+# Table on the right
+df_cat <- data.frame(
+  Conservación = c(
+    "Baja",
+    "Media",
+    "Alta",
+    "Muy alta"
+  ),
+  Criterio = c(
+    "<25\\% de $IE_{alta}$",
+    "25\\% a 50\\%",
+    "50\\% a 75\\%",
+    ">75\\%"
+  )
+)
+
+df_cat %>%
+  mutate(
+    Conservación = cell_spec(Conservación, color = col_palette)  # text color only
+  ) %>%
+  kable(
+    format = "latex",
+    booktabs = TRUE,
+    escape = FALSE,
+    align = "l",
+  ) %>%
+  kable_styling(position = "center", 
+                font_size = 10,
+                latex_options = "hold_position")
+```
+
+```{r IEalta-get, echo=FALSE}
+
+table_ie_alta <- df_dist %>% 
+  filter(ie_4cat == "IE alta" & location == "anp") %>% 
+  select(ANP_shortname, year, pct) %>% 
+  mutate(pct = round(pct*100,1)) %>% 
+  pivot_wider(names_from = "ANP_shortname",
+              values_from = "pct") %>% 
+  rename("año" = "year")
+
+ie_alta_anp <- table_change %>% 
+  filter(ANP_shortname == anp_shortname) %>% 
+  pull(ie_alta_2023)
+
+ie_alta_anp_diff <- table_change %>% 
+  filter(ANP_shortname == anp_shortname) %>% 
+  pull(ie_alta_diff)
+
+ie_alta_com <- table_change_com %>% 
+  filter(Complejo == complejo_name) %>% 
+  pull(ie_alta_2023)
+
+ie_alta_com_diff <- table_change_com %>% 
+  filter(Complejo == complejo_name) %>% 
+  pull(ie_alta_diff)
+```
+
+
+
+$EIE_{2023}$ de `r anp_shortname`: `r color_ie_alta(ie_alta_anp)` `r diff_text(ie_alta_anp_diff)`.
+
+
+
+```{r IEalta-table, echo=FALSE}
+
+table_ie_alta %>%
+  mutate(
+    across(
+      names(table_ie_alta)[-1],
+      ~ {
+        val <- .
+        txt <- paste0(val, "\\%")   # ← add percent symbol for LaTeX
+
+        case_when(
+          val <= 25 ~ cell_spec(txt,
+                                escape = FALSE,
+                                color = col_palette[1]),
+          val <= 50 ~ cell_spec(txt,
+                                escape = FALSE,
+                                color = col_palette[2]),
+          val <= 75 ~ cell_spec(txt,
+                                escape = FALSE,
+                                color = col_palette[3]),
+          TRUE      ~ cell_spec(txt,
+                                escape = FALSE,
+                                color = col_palette[4])
+        )
+      }
+    )
+  ) %>%
+  kable(
+    escape = FALSE,
+    align = "c",
+    booktabs = TRUE,
+    format = "latex",
+    caption = "Estado de la Integridad Ecosistémica"
+  ) %>%
+  kable_styling(
+    position = "center",
+    latex_options = c("hold_position")
+  )
+
+```
+
+
+
+## ![](img/Eficacia.png){width="65"} Eficacia en la protección de la Integridad Ecosistémica ($Ef_{IE}$) del ANP
+
+
+
+```{r effectivity-plot, echo=FALSE, message=FALSE, results='hide'}
+#| fig-height: 1.2
+
+ggplot(df_efectividad, 
+       aes(x = ANP_shortname, y = efectividad)) +
+  geom_hline(yintercept = 1, linetype="dashed", color = "red") +
+  geom_line(color="azure4") + 
+  geom_point(aes(color = factor(year))) +
+  # scale_y_continuous(trans = 'log10') +
+  scale_color_manual("Año",
+                     values = c("2020" = "aquamarine4",
+                                "2023" = "darkorchid4")) +
+  labs(x = NULL, y = "Eficacia") +
+  coord_flip() +
+  theme_classic()
+```
+
+```{r effectivity-change-table, echo=FALSE}
+#| layout-ncol: 2
+
+# Table on the left
+table_change %>%
+  select(ANP_shortname, ef_diff_symbol) %>% 
+  rename(ANP = ANP_shortname,
+        `Eficacia` = ef_diff_symbol)  %>% 
+  kable(escape = FALSE, align = c("l","c"), format = "latex",
+        booktabs = T) %>%
+  kable_styling(position = "center", 
+                font_size = 13,
+                latex_options = c("hold_position")) %>% 
+  column_spec(2, color = "white",
+              background = table_change %>%
+                pull(ef_diff_color) %>%
+                purrr::map_chr(~ colores[.x])) 
+
+# Table on the right
+df_cat <- data.frame(
+  Eficacia = c(
+    "Sin eficacia",
+    "Parcial",
+    "Alta",
+    "Sobresaliente"
+  ),
+  Criterio = c(
+    "$Ef_{IE}$ <1",
+    "1 a 2",
+    "2 a 3",
+    ">3"
+  )
+)
+
+df_cat %>%
+  mutate(
+    Eficacia = cell_spec(Eficacia, color = col_palette)  # text color only
+  ) %>%
+  kable(
+    format = "latex",
+    booktabs = TRUE,
+    escape = FALSE,
+    align = "l",
+  ) %>%
+  kable_styling(position = "center", 
+                font_size = 10,
+                latex_options = "hold_position")
+```
+
+```{r effectivity-get, echo=FALSE}
+table_efectividad <- df_efectividad %>% 
+  select(ANP_shortname, year, efectividad) %>% 
+  mutate(efectividad = round(efectividad,1)) %>% 
+  pivot_wider(names_from = "ANP_shortname",
+              values_from = "efectividad") %>% 
+  rename("año" = "year")
+
+efectividad_anp <- table_change %>% 
+  filter(ANP_shortname == anp_shortname) %>% 
+  pull(ef_2023)
+
+efectividad_anp_diff <- table_change %>% 
+  filter(ANP_shortname == anp_shortname) %>% 
+  pull(ef_diff)
+
+efectividad_com <- table_change_com %>% 
+  filter(Complejo == complejo_name) %>% 
+  pull(ef_2023)
+
+efectividad_com_diff <- table_change_com %>% 
+  filter(Complejo == complejo_name) %>% 
+  pull(ef_diff)
+
+# Effectivity of ANPs in Complejo
+# excluding selected ANP
+efectividad_com_noANP <- df_ie_total %>%
+  filter(Complejo == complejo_name &
+           ANP_shortname != anp_shortname &
+           year == 2023) %>% 
+  count(Complejo,
+        location, 
+        ie_4cat, name = "pct") %>% 
+  group_by(Complejo,
+           location) %>% 
+  mutate(pct = pct / sum(pct)) %>% 
+  ungroup() %>%
+  tidyr::pivot_wider(names_from = location, values_from = pct) %>%
+  replace(is.na(.), 0) %>% 
+  filter(ie_4cat == "IE alta") %>% 
+  mutate(efectividad = anp/periphery) %>%
+  mutate(efectividad = round(efectividad,1)) %>% 
+  pull(efectividad)
+```
+
+
+
+$Ef_{IE,2023}$ de `r anp_shortname`: `r color_efectividad(efectividad_anp)` `r diff_text(efectividad_anp_diff)`.
+
+
+
+```{r effectivity-table, echo=FALSE}
+table_efectividad %>%
+  mutate(across(names(table_efectividad)[-1],
+                ~ case_when(
+                    . <= 1 ~ cell_spec(., color = col_palette[1]),
+                    . <= 2 ~ cell_spec(., color = col_palette[2],),
+                    . <= 3 ~ cell_spec(., color = col_palette[3]),
+                    TRUE     ~ cell_spec(., color = col_palette[4])
+                ))) %>%
+  kable(escape = F, align = "c",
+        booktabs = T, format = "latex",
+        caption = "Eficacia") %>% 
+  kable_styling(position = "center", 
+                latex_options = c("hold_position"))
+
+```
+
+
+
+## ![](img/Presion.png){width="65"} Presión de la Zona de Influencia ($P$)
+
+
+
+```{r pressure-change-table, echo=FALSE}
+#| layout-ncol: 2
+
+# Table on the left
+table_change %>%
+  select(ANP_shortname, pres_diff_symbol) %>% 
+  rename(ANP = ANP_shortname,
+        `Presión` = pres_diff_symbol)  %>% 
+  kable(escape = FALSE, align = c("l","c"), format = "latex",
+        booktabs = T) %>%
+  kable_styling(position = "center", font_size = 13,
+                latex_options = c("hold_position")) %>% 
+  column_spec(2, color = "white",
+              background = table_change %>%
+                pull(pres_diff_color) %>%
+                purrr::map_chr(~ colores[.x]))
+
+# Table on the right
+df_cat <- data.frame(
+  Presión = c(
+    "Baja",
+    "Moderada",
+    "Alta",
+    "Muy alta"
+  ),
+  Criterio = c(
+    "<25\\% sin $IE_{alta}$ en ZI",
+    "25\\% a 50\\%",
+    "50\\% a 75\\%",
+    ">75\\%"
+  )
+)
+
+df_cat %>%
+  mutate(
+    Presión = cell_spec(Presión, color = rev(col_palette))  # text color only
+  ) %>%
+  kable(
+    format = "latex",
+    booktabs = TRUE,
+    escape = FALSE,
+    align = "l",
+  ) %>%
+  kable_styling(position = "center", font_size = 10,
+                latex_options = "hold_position")
+```
+
+```{r pressure-get, echo=FALSE}
+
+table_presion <- df_dist %>% 
+  filter(ie_4cat == "IE alta" & location == "periphery") %>% 
+  select(ANP_shortname, year, pct) %>% 
+  mutate(pct = round(100-pct*100,1)) %>% 
+  pivot_wider(names_from = "ANP_shortname",
+              values_from = "pct") %>% 
+  rename("año" = "year")
+
+presion_anp <- table_change %>% 
+  filter(ANP_shortname == anp_shortname) %>% 
+  pull(pres_2023)
+
+presion_anp_diff <- table_change %>% 
+  filter(ANP_shortname == anp_shortname) %>% 
+  pull(pres_diff)
+
+presion_com <- table_change_com %>% 
+  filter(Complejo == complejo_name) %>% 
+  pull(pres_2023)
+
+presion_com_diff <- table_change_com %>% 
+  filter(Complejo == complejo_name) %>% 
+  pull(pres_diff)
+```
+
+
+
+$P_{2023}$ de `r anp_shortname`: `r color_presion(presion_anp)` `r diff_text(presion_anp_diff)`.
+
+
+
+```{r pressure-table, echo=FALSE}
+table_presion %>%
+  mutate(
+    across(
+      names(table_presion)[-1],
+      ~ {
+        val <- .
+        txt <- paste0(val, "\\%")   # ← add percent symbol for LaTeX
+
+        case_when(
+          val <= 25 ~ cell_spec(txt,
+                                escape = FALSE,
+                                color = col_palette[4]),
+          val <= 50 ~ cell_spec(txt,
+                                escape = FALSE,
+                                color = col_palette[3]),
+          val <= 75 ~ cell_spec(txt,
+                                escape = FALSE,
+                                color = col_palette[2]),
+          TRUE      ~ cell_spec(txt,
+                                escape = FALSE,
+                                color = col_palette[1])
+        )
+      }
+    )
+  ) %>% 
+  kable(escape = F, align = "c", 
+        booktabs = T, format = "latex",
+        caption = "Presión de la Zona de Influencia") %>% 
+  kable_styling(position = "center", latex_options = c("hold_position"))
+```
+
+
+
+## Referencia con otros complejos regionales
+
+
+
+```{r complejo-color-table, echo=FALSE}
+
+table_change_com %>%
+  select(Complejo, ie_alta_diff_symbol, ef_diff_symbol, pres_diff_symbol) %>% 
+  rename(`Estado IE` = ie_alta_diff_symbol,
+        `Presión` = pres_diff_symbol,
+        `Eficacia` = ef_diff_symbol) %>% 
+  kable(escape = FALSE, 
+        align = c("l", "c", "c", "c"),
+        format = "latex",
+        booktabs = T,
+        linesep = "") %>%
+  kable_styling(position = "center", 
+                latex_options = c("hold_position")) %>% 
+  column_spec(2, color = "white",
+              background = table_change_com %>%
+                pull(ie_alta_color) %>%
+                purrr::map_chr(~ colores[.x])) %>%
+  column_spec(3, color = "white",
+              background = table_change_com %>%
+                pull(ef_diff_color) %>%
+                purrr::map_chr(~ colores[.x])) %>%
+  column_spec(4, color = "white",
+              background = table_change_com %>%
+                pull(pres_diff_color) %>%
+                purrr::map_chr(~ colores[.x])) 
+```
+
+
+
+El `r complejo_name` tiene:
+
+-   $EIE_{2023}$: `r color_ie_alta(ie_alta_com)` `r diff_text(ie_alta_com_diff)`.
+
+-   $Ef_{IE,2023}$: `r color_efectividad(efectividad_com)` `r diff_text(efectividad_com_diff)`.
+
+-   $P_{2023}$: `r color_presion(presion_com)` `r diff_text(presion_com_diff)`.
+
+## SÍNTESIS
+
+El ANP `r anp_name` presenta un estado de `r color_ie_alta(ie_alta_anp)`, `r color_efectividad(efectividad_anp)` y `r color_presion(presion_anp)`. Esto significa que `r text1(ie_alta_anp)` de Conservación muy alta y mantener el monitoreo del estado de IE del ANP y su Zona de Influencia (ZI).
+
+Dado el estado de conservación de la IE en el ANP y la tendencia descrita entre el 2020 y 2023, es deseable que la tendencia en el estado de la Conservación `r text2(ie_alta_anp_diff)` y la tendencia de la eficacia `r text2(efectividad_anp_diff)`. Las otras ANP del complejo presentan una `r color_efectividad(efectividad_com_noANP)`, es decir que son `r text3(efectividad_anp,efectividad_com_noANP)`.
+
+## IMPORTANTE
+
+Para comprender el estado de una ANP es importante considerar los tres indicadores en conjunto, tanto el Estado de Integridad Ecosistémica, como la Eficacia del ANP y la Presión que presenta la ZI del ANP. Así mismo, se recomienda revisar el estado de las ANP aledañas en el mismo complejo pues son comparables por estar localizadas en la misma zona bajo impactos antropogénicos y condiciones económicas y sociales similares.
+
+## CÁLCULO DE INDICADORES
+
+### Estado de la Integridad Ecosistémica del ANP
+
+El indicador del Estado de la Integridad Ecosistémica ($EIE$) del ANP es el **porcentaje del total del área que ocupa la clase de Integridad Ecosistémica alta** ($IE_{alta}$), es decir:
+
+$$EIE = \%IE_{alta}(ANP)$$
+
+**Un porcentaje deseable de IE en una ANP es tener 100% de su superficie geográfica con clase** $IE_{alta}$.
+
+### Eficacia en la protección de la Integridad Ecosistémica
+
+**“La eficacia es la capacidad de lograr el efecto que se desea o se espera.”** (RAE)
+
+En el caso de las ANP, la eficacia en la protección de la IE la entenderemos como **la capacidad de realizar acciones de manejo, restauración y conservación en el ANP con el fin específico de proteger y mantener alto el porcentaje de área con Integridad Ecosistémica alta.** La eficacia es calculada tomando como referencia el porcentaje de IE alta que tiene la zona de influencia (ZI), esta zona al no estar protegida **se esperaría que tenga menor porcentaje de área con IE alta que lo que hay dentro de la ANP.**
+
+El valor de la eficacia en la protección de la IE ($Ef_{IE}$) del ANP, se calcula como el **cociente del porcentaje de IE alta dentro del ANP (**$\%IE_{alta}(ANP)$**) entre el porcentaje de IE alta en el área de la Zona de Influencia (**$\%IE_{alta}(ZI)$**)**, es decir:
+
+$$
+Ef_{IE}=\frac{\%IE_{alta}(ANP)}{\%IE_{alta}(ZI)}
+$$
+
+El indicador de eficacia representa el número de veces que hay de porcentaje de IE alta dentro del ANP con respecto a lo que hay afuera de ella, por lo que nos informa sobre el efecto de las acciones logradas en la IE. Un valor de 1 significa condiciones similares dentro y fuera del ANP (es decir igual proporción de área de IE alta) y \<1 significa una mejor condición afuera del ANP que adentro, por lo que en ambos casos no parecen ser relevantes las acciones de manejo del ANP. En contraste, obtener valores arriba de 1 indica una mejor condición adentro del ANP que afuera, por lo que indica un manejo adecuado y eficaz dada la condición y presión existente en el ANP.
+
+### Presión de la Zona de Influencia
+
+Definimos la Presión ($P$) de la Zona de Influencia (ZI) como el **porcentaje del total del área que no tiene IE alta en la Zona de Influencia (ZI)**, es decir:
+
+$$
+P=100\%-\%IE_{alta}(ZI)
+$$
+
+El porcentaje de $IE_{alta}$ en la ZI nos indica el **grado de presión existente en el territorio alrededor de la ANP, si éste es bajo la presión es mayor.**
+
+## **DEFINICIONES Y MÉTODO**
+
+### **Integridad Ecosistémica**
+
+La Integridad Ecosistémica (IE) se refiere a qué tan completo, funcional o intacto está un ecosistema respecto a su estado natural (Wildlife Conservation Society 2020). La integridad más alta la alcanzan las áreas no afectadas de manera significativa por actividades humanas, las cuales son fundamentales para la conservación de la biodiversidad, pues es en ecosistemas con alta integridad que las especies tienen menor riesgo de extinción (Di Marco et al. 2019). Además, estas áreas contribuyen en mayor medida, respecto a áreas degradadas, a los servicios ecológicos, como la absorción de $CO_2$, el suministro de agua y protección de riesgos causados por el cambio climático (Watson et al. 2018; Martin and Watson 2016). Por lo tanto, es de gran importancia, medir y monitorear la IE para preservar áreas con alta integridad y restaurar áreas de baja integridad.
+
+### **Índice de Integridad Ecosistémica**
+
+El Índice de Integridad Ecosistémica (IIE) informa sobre el grado de conservación de la estructura y función de la vegetación en el tiempo con respecto a la vegetación primaria para informar de la condición de los ecosistemas con base a la intensidad de cambio en la cobertura vegetal.
+
+### **Método del cálculo del Índice de Integridad Ecosistémica**
+
+El IIE se basa en la variable $hemerobia$, cuya clasificación originalmente consta de 18 clases (Equihua et al 2018). Ésta fue actualizada dado los cambios en la nomenclatura de las clases de vegetación y cuerpos de agua de la Serie VII de INEGI, cuyo mapa es comparado con el de vegetación primaria para obtener el IIE.
+
+Para la mejor comprensión de los estados de IE y eficacia las 16 clases resultantes, se recategorizaron en 4: $IE_{alta}$, $IE_{media}$, $IE_{baja}$, $IE_{muy baja}$ (CONABIO, 2025).
+
+La clase alta ($IE_{alta}$) representa a la vegetación natural (primaria) remanente en el país representada por las clases 0 a la 4 de la $hemerobia$. Ésta es tomada como referencia para estimar los indicadores de estado, presión y eficacia.
+
+#### Modelo
+
+Para estimar el IIE de diferentes años, se usa un modelo $XGBoost$ (refuerzo del gradiente extremo), el cual es un método de aprendizaje automático supervisado para clasificación, que mediante variables predictoras estima el valor del IIE para el año deseado.
+
+#### **Variables predictoras**
+
+Cobertura del suelo (MODIS, NASA LP DAAC), productividad primaria bruta (fotosíntesis), estructura de la vegetación (radar Sentinel-1), elevación, zonas de vida de Holdridge y distancia al borde. Resolución: 250x250m
+
+#### **Validación**
+
+Fauna indicadora clave (SiPeCaM).
+
+## **Agradecimientos**
+
+*Estas acciones/logros son posibles gracias al apoyo del proyecto Conservación y Uso Sostenible en Montañas y Sierras (CoSMoS), una iniciativa respaldada por la Cooperación Alemana a través de KfW, implementada en coordinación entre CONANP, CONABIO y FMCN.*
+
+## **Referencia**
+
+Di Marco, Moreno, Simon Ferrier, Tom D Harwood, Andrew J Hoskins, and James EM Watson. 2019. “Wilderness Areas Halve the Extinction Risk of Terrestrial Biodiversity.” Nature 573 (7775): 582–85.
+
+Martin, Tara G, and James EM Watson. 2016. “Intact Ecosystems Provide Best Defence Against Climate Change.” Nature Climate Change 6 (2): 122–24.
+
+Watson, James EM, Tom Evans, Oscar Venter, Brooke Williams, Ayesha Tulloch, Claire Stewart, Ian Thomp- son, et al. 2018. “The Exceptional Value of Intact Forest Ecosystems.” Nature Ecology & Evolution.
+
+Plataforma de condición de las Áreas NaturalesProtegidas: Integridad Ecosistémica 2020- 2023-2027. COSMOS. <https://karensanchez.shinyapps.io/iie_anps>
+
+Sánchez et al. Modelo de clasificación de Integridad Ecosistémica. CONABIO. 2025 <https://github.com/CONABIO/ie_model>
+

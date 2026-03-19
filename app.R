@@ -19,10 +19,18 @@ names(raster_list) <- gsub('data/ie//ie_xgb_','',
                            gsub('.tif','',raster_files))
 
 # Read ANP shapefile
-anp_file <- vect('data/anp/186ANP_ITRF08_19012023.shp')
+anp_file <- vect('data/anp/232_ANP-ITRF08_04072025.shp')
 anp_file <-  project(anp_file, crs(raster_list['2017']))
 cosmos_anps <- read.csv('data/anp_cosmos/cosmos_anps.csv')
 sym_anps <- read.csv('data/anp_sym/sym_anps.csv')
+
+# Update Cienegas de Lerma shapefile
+lerma_shp <- vect('data/anp/cienegas_lerma/Subzon_CLerma_utmitrf08_DOFPM.shp')
+lerma_shp <-  project(lerma_shp, crs(anp_file))
+lerma_shp <- aggregate(lerma_shp)
+values(lerma_shp) <- values(anp_file[anp_file$NOMBRE == "Ciénegas del Lerma"])
+anp_file <- anp_file[anp_file$NOMBRE != "Ciénegas del Lerma"]
+anp_file <- rbind(anp_file, lerma_shp)
 
 # Read influence zones
 buffer_folder <- "data/Zonas de Influencia_Vectores/"
