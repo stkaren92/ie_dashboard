@@ -285,7 +285,7 @@ ui <- navbarPage(
                 <table>
                   <thead>
                     <tr>
-                      <th></th>
+                      <th>Hemerobia</th>
                       <th>IIE (16 categorías)</th>
                       <th>IIE (4 Categorías)</th>
                       <th>Descripción</th>
@@ -632,10 +632,13 @@ server <- function(input, output, session) {
                          na.color = "transparent")
       
     } else {
-      pal_domain <- 0:15
-      label_map <- setNames(0:15, pal_domain)
-      pal <- colorNumeric(c("#1A9641", "#FFFFBF", "#D7191C"), 
-                          pal_domain,
+      pal_domain <- c(0,15)
+      label_map <- setNames(c("IE alta","IE baja"), c(0,15))
+      pal <- colorNumeric(c("#1A9641", "#1A9641",
+                            "#A6D96A", "#A6D96A",
+                            "#FDAE61", "#FDAE61",
+                            "#D7191C"),
+                          domain = c(0,15),
                           na.color = "transparent")
     }
     
@@ -645,9 +648,10 @@ server <- function(input, output, session) {
       addRasterImage(r_ie,
                      colors = pal, opacity = 1) %>%
       addLegend(pal =  pal, 
-                values =pal_domain,
+                values = pal_domain,
                 title = "IE", 
                 position = "bottomright", 
+                bins = c(0,5,10,15),
                 labFormat = function(type, cuts) {
                   label_map[as.character(cuts)]
                 })
