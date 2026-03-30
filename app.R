@@ -633,10 +633,10 @@ server <- function(input, output, session) {
       
     } else {
       pal_domain <- c(0,15)
-      label_map <- setNames(c("IE alta","IE baja"), c(0,15))
-      pal <- colorNumeric(c("#1A9641", "#1A9641",
-                            "#A6D96A", "#A6D96A",
-                            "#FDAE61", "#FDAE61",
+      label_map <- setNames(c("IE alta","IE muy baja"), c(0,15))
+      pal <- colorNumeric(c("#1A9641", "#66BD63",
+                            "#A6D96A", "#FFFFBF",
+                            "#FDAE61", "#F46D43",
                             "#D7191C"),
                           domain = c(0,15),
                           na.color = "transparent")
