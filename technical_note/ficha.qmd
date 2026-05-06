@@ -8,30 +8,30 @@ format:
     colorlinks: true
 editor: visual
 params:
-  anp_name: "Ciénegas del Lerma"
+  anp_name: "Iztaccíhuatl-Popocatépetl"
   project_name: "cosmos"
 ---
 
 ```{r define-colorize, echo=FALSE}
 color_ie_alta <- function(ie_alta_anp) {
-  if (ie_alta_anp <= 25) {
-    estado <- "Conservación baja"
+  if (ie_alta_anp < 25) {
+    estado <- "Estado de conservación bajo"
     color <- gsub("#", "", col_palette[1])
   } else if (ie_alta_anp <= 50) {
-    estado <- "Conservación media"
+    estado <- "Estado de conservación medio"
     color <- gsub("#", "", col_palette[2])
   } else if (ie_alta_anp <= 75) {
-    estado <- "Conservación alta"
+    estado <- "Estado de conservación alto"
     color <- gsub("#", "", col_palette[3])
   } else {
-    estado <- "Conservación muy alta"
+    estado <- "Estado de conservación muy alto"
     color <- gsub("#", "", col_palette[4])
   }
   sprintf("\\textcolor[HTML]{%s}{%s}", color, estado)
 }
 
 color_presion <- function(presion_anp) {
-  if (presion_anp <= 25) {
+  if (presion_anp < 25) {
     estado <- "Presión baja"
     color <- gsub("#", "", col_palette[4])
   } else if (presion_anp <= 50) {
@@ -48,8 +48,8 @@ color_presion <- function(presion_anp) {
 }
 
 color_efectividad <- function(efectividad_anp) {
-  if (efectividad_anp <= 1) {
-    estado <- "Sin eficacia"
+  if (efectividad_anp < 1) {
+    estado <- "Eficacia baja"
     color <- gsub("#", "", col_palette[1])
   } else if (efectividad_anp <= 2) {
     estado <- "Eficacia parcial"
@@ -77,7 +77,7 @@ diff_text <- function(diff_value){
 
 text1 <- function(ie_value){
   if(ie_value <= 50) {
-    "hay un grado de grado de preocupación alto en el ANP, por lo que se recomienda alcanzar un estado"
+    "hay un grado de preocupación alto en el ANP, por lo que se recomienda alcanzar un estado"
   } else if(ie_value <= 75) {
     "si bien hay un grado de preocupación menor en el ANP, se recomenda alcanzar un estado"
   } else {
@@ -98,17 +98,17 @@ text2 <- function(diff_value){
 
 text3 <- function(ef_anp, ef_com){
   
-  ef_anp <- ifelse(ef_anp <= 1, 1, 
+  ef_anp <- ifelse(ef_anp < 1, 1, 
                    ifelse(ef_anp <= 2, 2,
                           ifelse(ef_anp <= 3, 3, 4)))
-  ef_com <- ifelse(ef_com <= 1, 1, 
+  ef_com <- ifelse(ef_com < 1, 1, 
                    ifelse(ef_com <= 2, 2,
                           ifelse(ef_com <= 3, 3, 4)))
   
   diff_value <- ef_com - ef_anp
   
   if(diff_value > 0) {
-    sprintf("más eficaces que el ANP %s, por lo que las acciones dentro de ésta muestran ser insuficientes a las realizadas en las ANP que pertenecen al mismo complejo", anp_name)
+    sprintf("más eficaces que el ANP %s, por lo tanto las acciones en el ANP parecieran ser insuficientes", anp_name)
   } else if(diff_value < 0) {
     sprintf("menos eficaces que el ANP %s, por lo que las acciones dentro de ésta muestran ser mejores a las realizadas en las ANP que pertenecen al mismo complejo", anp_name)
   } else {
@@ -316,7 +316,7 @@ table_ie_alta_change <- df_dist %>%
            ie_alta_diff == 0 ~ "="
          ),
          ie_alta_color = case_when(
-           ie_alta_2023 <= 25 ~ "baja",
+           ie_alta_2023 < 25 ~ "baja",
            ie_alta_2023 <= 50 ~ "media",
            ie_alta_2023 <= 75 ~ "alta",
            ie_alta_2023 > 75 ~ "muyalta",
@@ -340,7 +340,7 @@ table_presion_change <- df_dist %>%
            pres_diff == 0 ~ "="
          ),
          pres_diff_color = case_when(
-           pres_2023 <= 25 ~ "muyalta",
+           pres_2023 < 25 ~ "muyalta",
            pres_2023 <= 50 ~ "alta",
            pres_2023 <= 75 ~ "media",
            pres_2023 > 75 ~ "baja",
@@ -364,7 +364,7 @@ table_efectividad_change <- df_efectividad %>%
            ef_diff == 0 ~ "="
          ),
          ef_diff_color = case_when(
-           ef_2023 <= 1 ~ "baja",
+           ef_2023 < 1 ~ "baja",
            ef_2023 <= 2 ~ "media",
            ef_2023 <= 3 ~ "alta",
            ef_2023 > 3 ~ "muyalta",
@@ -395,7 +395,7 @@ table_ie_alta_change_com <- df_dist_com %>%
            ie_alta_diff == 0 ~ "="
          ),
          ie_alta_color = case_when(
-           ie_alta_2023 <= 25 ~ "baja",
+           ie_alta_2023 < 25 ~ "baja",
            ie_alta_2023 <= 50 ~ "media",
            ie_alta_2023 <= 75 ~ "alta",
            ie_alta_2023 > 75 ~ "muyalta",
@@ -419,7 +419,7 @@ table_presion_change_com <- df_dist_com %>%
            pres_diff == 0 ~ "="
          ),
          pres_diff_color = case_when(
-           pres_2023 <= 25 ~ "muyalta",
+           pres_2023 < 25 ~ "muyalta",
            pres_2023 <= 50 ~ "alta",
            pres_2023 <= 75 ~ "media",
            pres_2023 > 75 ~ "baja",
@@ -443,7 +443,7 @@ table_efectividad_change_com <- df_efectividad_com %>%
            ef_diff == 0 ~ "="
          ),
          ef_diff_color = case_when(
-           ef_2023 <= 1 ~ "baja",
+           ef_2023 < 1 ~ "baja",
            ef_2023 <= 2 ~ "media",
            ef_2023 <= 3 ~ "alta",
            ef_2023 > 3 ~ "muyalta",
@@ -470,7 +470,7 @@ colores <- c(
 ```{r map, echo=FALSE, message=FALSE, results='hide'}
 #| dev: png
 #| dpi: 300
-#| fig-height: 3.8
+#| fig-height: 3.6
 
 # IE raster
 ie <- rast('/Users/kasanchez/Documents/ie_dashboard/data/ie/ie_xgb_2023.tif')
@@ -550,8 +550,12 @@ ggplot() +
   )
 ```
 
+```{r height_plot, echo=FALSE, message=FALSE, results='hide'}
+height_plot <- length(unique(df_dist$ANP_shortname)) * 0.4
+```
+
 ```{r distribution-plot, echo=FALSE, message=FALSE, results='hide'}
-#| fig-height: 1.2
+#| fig-height: !expr height_plot
 
 ggplot(df_dist, 
        aes(x = year, y = pct, fill = ie_4cat,  
@@ -586,6 +590,8 @@ ggplot(df_dist,
 ```
 
 ```{r anp-shorname-table, echo=FALSE}
+#| layout-ncol: 2
+
 df_dist %>%
   select(ANP_shortname, anp_name) %>% 
   distinct() %>% 
@@ -595,10 +601,24 @@ df_dist %>%
         col.names = NULL,
         align = c("l"), format = "latex",
         booktabs = T) %>%
-  column_spec(2, width = "5.5cm") %>%
-  kable_styling(position = "left", 
+  column_spec(2, width = "4cm") %>%
+  kable_styling(position = "center", 
                 latex_options = c("hold_position"),
-                font_size = 9,)
+                font_size = 8)
+
+
+data.frame(col = c("Tendencia de indicadores en periodo de 3 años",
+                   "= igual al año inicial del periodo",
+                   "$\\uparrow$ incremento en el periodo",
+                   "$\\downarrow$ decremento en el periodo",
+                   "Nota: la tendencia cambia con el cambio de unidad")) %>% 
+  kable(escape = FALSE, 
+        col.names = NULL,
+        align = c("l"), format = "latex",
+        booktabs = T) %>%
+  kable_styling(position = "center", 
+                latex_options = c("hold_position"),
+                font_size = 8) 
 ```
 
 ## ![](img/IE.png){width="65" height="61"} Estado de la Integridad Ecosistémica ($EIE$)
@@ -625,10 +645,10 @@ table_change %>%
 # Table on the right
 df_cat <- data.frame(
   Conservación = c(
-    "Baja",
-    "Media",
-    "Alta",
-    "Muy alta"
+    "Bajo",
+    "Medio",
+    "Alto",
+    "Muy alto"
   ),
   Criterio = c(
     "<25\\% de $IE_{alta}$",
@@ -693,7 +713,7 @@ table_ie_alta %>%
         txt <- paste0(val, "\\%")   # ← add percent symbol for LaTeX
 
         case_when(
-          val <= 25 ~ cell_spec(txt,
+          val < 25 ~ cell_spec(txt,
                                 escape = FALSE,
                                 color = col_palette[1]),
           val <= 50 ~ cell_spec(txt,
@@ -728,16 +748,23 @@ table_ie_alta %>%
 ```{r effectivity-plot, echo=FALSE, message=FALSE, results='hide'}
 #| fig-height: 1.2
 
-ggplot(df_efectividad, 
+p_ef <- ggplot(df_efectividad, 
        aes(x = ANP_shortname, y = efectividad)) +
   geom_hline(yintercept = 1, linetype="dashed", color = "red") +
   geom_line(color="azure4") + 
   geom_point(aes(color = factor(year))) +
-  # scale_y_continuous(trans = 'log10') +
   scale_color_manual("Año",
                      values = c("2020" = "aquamarine4",
                                 "2023" = "darkorchid4")) +
-  labs(x = NULL, y = "Eficacia") +
+  labs(x = NULL, y = "Eficacia")
+
+# Log-scale if max value > 10
+if(max(df_efectividad$efectividad, na.rm = TRUE) > 10){
+  p_ef <- p_ef +
+  scale_y_log10() 
+} 
+
+p_ef +
   coord_flip() +
   theme_classic()
 ```
@@ -763,7 +790,7 @@ table_change %>%
 # Table on the right
 df_cat <- data.frame(
   Eficacia = c(
-    "Sin eficacia",
+    "Baja",
     "Parcial",
     "Alta",
     "Sobresaliente"
@@ -842,7 +869,7 @@ $Ef_{IE,2023}$ de `r anp_shortname`: `r color_efectividad(efectividad_anp)` `r d
 table_efectividad %>%
   mutate(across(names(table_efectividad)[-1],
                 ~ case_when(
-                    . <= 1 ~ cell_spec(., color = col_palette[1]),
+                    . < 1 ~ cell_spec(., color = col_palette[1]),
                     . <= 2 ~ cell_spec(., color = col_palette[2],),
                     . <= 3 ~ cell_spec(., color = col_palette[3]),
                     TRUE     ~ cell_spec(., color = col_palette[4])
@@ -943,7 +970,7 @@ table_presion %>%
         txt <- paste0(val, "\\%")   # ← add percent symbol for LaTeX
 
         case_when(
-          val <= 25 ~ cell_spec(txt,
+          val < 25 ~ cell_spec(txt,
                                 escape = FALSE,
                                 color = col_palette[4]),
           val <= 50 ~ cell_spec(txt,
@@ -1005,13 +1032,13 @@ El `r complejo_name` tiene:
 
 ## SÍNTESIS
 
-El ANP `r anp_name` presenta un estado de `r color_ie_alta(ie_alta_anp)`, `r color_efectividad(efectividad_anp)` y `r color_presion(presion_anp)`. Esto significa que `r text1(ie_alta_anp)` de Conservación muy alta y mantener el monitoreo del estado de IE del ANP y su Zona de Influencia (ZI).
+El ANP `r anp_name` presenta un `r color_ie_alta(ie_alta_anp)` de la Integridad Ecosistémica, `r color_efectividad(efectividad_anp)` y `r color_presion(presion_anp)`. Esto significa que `r text1(ie_alta_anp)` de Conservación muy alto y mantener el monitoreo del estado de IE del ANP y su Zona de Influencia (ZI).
 
 Dado el estado de conservación de la IE en el ANP y la tendencia descrita entre el 2020 y 2023, es deseable que la tendencia en el estado de la Conservación `r text2(ie_alta_anp_diff)` y la tendencia de la eficacia `r text2(efectividad_anp_diff)`. Las otras ANP del complejo presentan una `r color_efectividad(efectividad_com_noANP)`, es decir que son `r text3(efectividad_anp,efectividad_com_noANP)`.
 
 ## IMPORTANTE
 
-Para comprender el estado de una ANP es importante considerar los tres indicadores en conjunto, tanto el Estado de Integridad Ecosistémica, como la Eficacia del ANP y la Presión que presenta la ZI del ANP. Así mismo, se recomienda revisar el estado de las ANP aledañas en el mismo complejo pues son comparables por estar localizadas en la misma zona bajo impactos antropogénicos y condiciones económicas y sociales similares.
+Para comprender el estado de una ANP es importante considerar los tres indicadores en conjunto, tanto el Estado de Integridad Ecosistémica, como la Eficacia del ANP y la Presión que presenta la ZI del ANP. Así mismo, se recomienda revisar el estado de las ANP en el mismo complejo (conjunto de ANP)  pues es probable que por estar localizadas en la misma región, compartan condiciones económicas, sociales e impactos antropogénicos similares.
 
 ## CÁLCULO DE INDICADORES
 
@@ -1025,7 +1052,7 @@ $$EIE = \%IE_{alta}(ANP)$$
 
 ### Eficacia en la protección de la Integridad Ecosistémica
 
-**“La eficacia es la capacidad de lograr el efecto que se desea o se espera.”** (RAE)
+“*La eficacia es la capacidad de lograr el efecto que se desea o se espera*”, Real Academia Española.
 
 En el caso de las ANP, la eficacia en la protección de la IE la entenderemos como **la capacidad de realizar acciones de manejo, restauración y conservación en el ANP con el fin específico de proteger y mantener alto el porcentaje de área con Integridad Ecosistémica alta.** La eficacia es calculada tomando como referencia el porcentaje de IE alta que tiene la zona de influencia (ZI), esta zona al no estar protegida **se esperaría que tenga menor porcentaje de área con IE alta que lo que hay dentro de la ANP.**
 
@@ -1051,44 +1078,55 @@ El porcentaje de $IE_{alta}$ en la ZI nos indica el **grado de presión existent
 
 ### **Integridad Ecosistémica**
 
-La Integridad Ecosistémica (IE) se refiere a qué tan completo, funcional o intacto está un ecosistema respecto a su estado natural (Wildlife Conservation Society 2020). La integridad más alta la alcanzan las áreas no afectadas de manera significativa por actividades humanas, las cuales son fundamentales para la conservación de la biodiversidad, pues es en ecosistemas con alta integridad que las especies tienen menor riesgo de extinción (Di Marco et al. 2019). Además, estas áreas contribuyen en mayor medida, respecto a áreas degradadas, a los servicios ecológicos, como la absorción de $CO_2$, el suministro de agua y protección de riesgos causados por el cambio climático (Watson et al. 2018; Martin and Watson 2016). Por lo tanto, es de gran importancia, medir y monitorear la IE para preservar áreas con alta integridad y restaurar áreas de baja integridad.
+La Integridad Ecosistémica (IE) se refiere a qué tan completo, funcional o intacto está un ecosistema respecto a su estado natural (Wildlife Conservation Society 2020).
+
+La integridad más alta la alcanzan las áreas no afectadas de manera significativa por actividades humanas, las cuales son fundamentales para la conservación de la biodiversidad, pues es en ecosistemas con alta integridad que las especies tienen menor riesgo de extinción (Di Marco et al. 2019). Además, estas áreas contribuyen en mayor medida, respecto a áreas degradadas a la absorción de $CO_2$, el suministro de agua y protección de riesgos causados por el cambio climático (Watson et al. 2018; Martin and Watson 2016), maximizan la provisión de servicios ecosistémicos y son más estables ante cambios ambientales (IUCN, 2025). Por lo tanto, es de gran importancia, medir y monitorear la IE para preservar áreas con alta integridad y para restaurar las de menor integridad.
 
 ### **Índice de Integridad Ecosistémica**
 
-El Índice de Integridad Ecosistémica (IIE) informa sobre el grado de conservación de la estructura y función de la vegetación en el tiempo con respecto a la vegetación primaria para informar de la condición de los ecosistemas con base a la intensidad de cambio en la cobertura vegetal.
+El Índice de Integridad Ecosistémica (IIE) informa sobre el grado de conservación de la estructura y función de la vegetación en el tiempo y dar cuenta de la condición de los ecosistemas con base a la intensidad de cambio en la cobertura vegetal.
 
 ### **Método del cálculo del Índice de Integridad Ecosistémica**
 
-El IIE se basa en la variable $hemerobia$, cuya clasificación originalmente consta de 18 clases (Equihua et al 2018). Ésta fue actualizada dado los cambios en la nomenclatura de las clases de vegetación y cuerpos de agua de la Serie VII de INEGI, cuyo mapa es comparado con el de vegetación primaria para obtener el IIE.
-
-Para la mejor comprensión de los estados de IE y eficacia las 16 clases resultantes, se recategorizaron en 4: $IE_{alta}$, $IE_{media}$, $IE_{baja}$, $IE_{muy baja}$ (CONABIO, 2025).
-
-La clase alta ($IE_{alta}$) representa a la vegetación natural (primaria) remanente en el país representada por las clases 0 a la 4 de la $hemerobia$. Ésta es tomada como referencia para estimar los indicadores de estado, presión y eficacia.
+El IIE se ha calculado con base en $hemerobia$ en México(INEGI 2021a)*.* $Hemerobia$ *(H)* evalúa la transformación por impacto antropogénico sobre la vegetación natural, en este sentido la IE es el inverso de la H. La H es una variable de tipo categórico ordinal, pero y se transformó a un valor entre 0 a 1, en versiones anteriores del índice IE (Equihua et al 2018).  Para la versión actual del IIE (2020, 2023) utilizada en el presente diagnóstico, las clases de *H* fueron revisadas y actualizadas considerando los cambios en la nomenclatura de los tipos de vegetación en la Serie VII de INEGI y se ajustaron algunas de las clases, por distintas cauasas, por ejemplo los cuerpos de agua no tienen información precisa en una condición prístina o ya no existe la clase de zonas urbanas en la Serie VII. Así IIE no toma en cuenta los cuerpos de agua, pues está basado principalmente en los cambios que se detectan en las fuentes de información disponible de vegetación. El único caso en que la fuente primaria de la vegetación mostró cambios de cuerpo de agua a vegetación esa clase sí queda considerada en el IIE (Sánchez et al 2026). El mapa de H fue generado a partir de la Seirie VII (INEGI, 2021b), a partir de la cual se genera el modelo para los años deseados, en este caso: 2020 y 2023, para las ANP y ZI de la Región centro y Eje Neovolcánico.
 
 #### Modelo
 
-Para estimar el IIE de diferentes años, se usa un modelo $XGBoost$ (refuerzo del gradiente extremo), el cual es un método de aprendizaje automático supervisado para clasificación, que mediante variables predictoras estima el valor del IIE para el año deseado.
+Para estimar el IIE de diferentes años, se usa un modelo $XGBoost$ (refuerzo del gradiente extremo) el cuál es un método de aprendizaje automático supervisado para clasificación, que mediante variables predictoras (cobertura del suelo (MODIS, NASA LP DAAC), productividad primaria bruta (fotosíntesis), estructura de la vegetación (radar Sentinel-1), elevación, zonas de vida de Holdridge y distancia al borde) de origen satelital de los años 2020 y 2023 para estimar el valor de las clases de IIE para ambos años.
 
-#### **Variables predictoras**
+Una vez obtenidas las 16 clases de salida de la *H* a partir de la Serie VII se obtuvo el inverso de este mapa, para obtener los valores de las clases de IIE. Lo que pretende conseguir un mejor entendimiento del significado de cada clase y de los estados de la IE, por lo que se utiliza una escala ordinal con un orden natural, pero donde la distancia entre ellos no es cuantificable.
 
-Cobertura del suelo (MODIS, NASA LP DAAC), productividad primaria bruta (fotosíntesis), estructura de la vegetación (radar Sentinel-1), elevación, zonas de vida de Holdridge y distancia al borde. Resolución: 250x250m
+Las clases del IIE se reportan en el mapa  raster en dos versiones:
 
-#### **Validación**
+**IIE** **4 clases,** donde $IE_{muy baja}$ es 1; $IE_{baja}$ es 2; $IE_{media}$ es 3 y la $IE_{alta}$ es 4 (Sánchez *et al*, 2026). La clase alta ($IE_{alta}$) representa principalmente a la **vegetación primaria** remanente en el país, la IE media la **vegetación secundaria**, la IE baja a la **agricultura** y la IE muy baja a zonas de **asentamientos humanos e infraestructura**. La IE alta es tomada como referencia principal para estimar los indicadores de Estado, Eficacia y Presión del Diagnóstico de Integridad Ecosistémica por ser el valor deseable dominante en las ANP del país.
 
-Fauna indicadora clave (SiPeCaM).
+**IIE 16 clases**, donde 1 es la clase: *Degradación muy severa* a la 16 que es la clase llamada *Éstasis* (Sánchez *et al*, 2026).
 
-## **Agradecimientos**
+**Resolución**: 250x250m
 
-*Estas acciones/logros son posibles gracias al apoyo del proyecto Conservación y Uso Sostenible en Montañas y Sierras (CoSMoS), una iniciativa respaldada por la Cooperación Alemana a través de KfW, implementada en coordinación entre CONANP, CONABIO y FMCN.*
+```{r print-agradecimientos, echo=FALSE}
+#| results: asis
 
-## **Referencia**
+if(project_name == "cosmos"){
+  cat("## Agradecimientos\n")
+  cat("Estas acciones son posibles gracias al apoyo del proyecto Conservación y Uso Sostenible en Montañas y Sierras (CoSMoS), una iniciativa respaldada por la Cooperación Alemana a través de KfW, implementada en coordinación entre CONANP, CONABIO y FMCN.")
+}
+```
+
+## **Referencias**
 
 Di Marco, Moreno, Simon Ferrier, Tom D Harwood, Andrew J Hoskins, and James EM Watson. 2019. “Wilderness Areas Halve the Extinction Risk of Terrestrial Biodiversity.” Nature 573 (7775): 582–85.
 
+INEGI.2021a. Índice de Hemerobia. Capítulo 5.3.1.3.2.2. En: *Cuentas de los Ecosistemas de México. Resultados del Proyecto* Natural Capital Accounting and Valuation of Ecosystem Services *(*NCAVES*)*. México, INEGI, 258 pp.
+
+INEGI. 2021b. Conjunto de datos vectoriales de la carta de Uso del suelo y vegetación. Escala 1:250 000. Serie VII. Conjunto Nacional.', escala: 1:250 000. edición: 1. Instituto Nacional de Estadística y Geografía. Aguascalientes, México.
+
+IUCN. 2025. <https://iucncongress2025.org/es/noticias/todos-noticias/integridad-de-los-ecosistemas-un-imperativo-de-conservacion>
+
 Martin, Tara G, and James EM Watson. 2016. “Intact Ecosystems Provide Best Defence Against Climate Change.” Nature Climate Change 6 (2): 122–24.
 
-Watson, James EM, Tom Evans, Oscar Venter, Brooke Williams, Ayesha Tulloch, Claire Stewart, Ian Thomp- son, et al. 2018. “The Exceptional Value of Intact Forest Ecosystems.” Nature Ecology & Evolution.
+Sánchez K., Munguía M., Barrios J., E. Robredo. CONABIO. 2026. Plataforma sobre la condición de Integridad Ecosistémica de las Áreas Naturales Protegidas centro y este del país: Integridad Ecosistémica 2020- 2023. CoSMoS. CONABIO, CONANP, FMCN, KfW.<https://karensanchez.shinyapps.io/iie_anps>.
 
-Plataforma de condición de las Áreas NaturalesProtegidas: Integridad Ecosistémica 2020- 2023-2027. COSMOS. <https://karensanchez.shinyapps.io/iie_anps>
+Watson, James EM, Tom Evans, Oscar Venter, Brooke Williams, Ayesha Tulloch, Claire Stewart, Ian Thomp- son, et al. 2018. “The Exceptional Value of Intact Forest Ecosystems.” Nature Ecology & Evolution.
 
 Sánchez et al. Modelo de clasificación de Integridad Ecosistémica. CONABIO. 2025 <https://github.com/CONABIO/ie_model>

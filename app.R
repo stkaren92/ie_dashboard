@@ -38,8 +38,8 @@ buffer_files <- list.files(buffer_folder, pattern = "\\.shp$", full.names = TRUE
 buffer_list <- lapply(buffer_files, vect)
 names(buffer_list) <- tools::file_path_sans_ext(basename(buffer_files))
 
-anp_file <- anp_file[anp_file$NOMBRE %in% sym_anps$ANP_name |
-                       anp_file$NOMBRE %in% cosmos_anps$ANP_name]
+# anp_file <- anp_file[anp_file$NOMBRE %in% sym_anps$ANP_name |
+#                        anp_file$NOMBRE %in% cosmos_anps$ANP_name]
 
 col_pal <- brewer.pal(4, "RdYlGn")
 
@@ -285,30 +285,30 @@ ui <- navbarPage(
                 <table>
                   <thead>
                     <tr>
-                      <th>Hemerobia</th>
-                      <th>IIE (16 categorías)</th>
-                      <th>IIE (4 Categorías)</th>
+                      <th>IIE</th>
+                      <th>IIE 16 categorías</th>
+                      <th>IIE 4 Categorías</th>
                       <th>Descripción</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr><td>0</td><td> Estasis</td><td class="alta">IE alta</td><td>No hay cambio de tipo de vegetación ni de estado primario.</td></tr>
-                    <tr><td>1</td><td> Pseudoestasis inferior</td><td class="alta">IE alta</td><td>No hay cambio de estado primario, sí hay cambio de tipo de vegetación pero dentro de la misma ecovariante.</td></tr>
-                    <tr><td>2</td><td> Pseudoestasis media</td><td class="alta">IE alta</td><td>No hay cambio de estado primario, sí hay cambio de tipo de vegetación a otra ecovariante pero el estrato dominante ascendiendo en porte (e.g. Matorral a Bosque).</td></tr>
-                    <tr><td>3</td><td> Pseudoestasis superior</td><td class="alta">IE alta</td><td>No hay cambio de estado primario, sí hay cambio de tipo de vegetación a otra ecovariante pero manteniéndose el porte del estrato dominante (e.g. Bosque de Encino a Selva Baja).</td></tr>
-                    <tr><td>4</td><td> Degradación somera inferior</td><td class="alta">IE alta</td><td>No hay cambio de estado primario, sí hay cambio de tipo de vegetación a otra ecovariante pero descendiendo el porte del estrato dominante (e.g. Matorral a Pastizal o Herbazal). Cuerpo de agua cambia a Vegetación primaria.</td></tr>
-                    <tr><td>5</td><td> Degradación somera media</td><td class="media">IE media</td><td>Cambio de cualquier tipo de Vegetación primaria o "Cuerpo de agua" a Vegetación Secundaria Arbórea</td></tr>
-                    <tr><td>6</td><td> Degradación moderada superior</td><td class="media">IE media</td><td>Cambio de cualquier clase de Vegetación primaria o "Cuerpo de agua" a Bosque inducido o Bosque cultivado (antes Plantación forestal).</td></tr>
-                    <tr><td>7</td><td> Degradación moderada inferior</td><td class="media">IE media</td><td>Cambio de cualquier clase de Vegetación primaria o "Cuerpo de agua" a Vegetación Secundaria Arbustiva</td></tr>
-                    <tr><td>8</td><td> Degradación moderada media</td><td class="media">IE media</td><td>Cambio de cualquier clase de Vegetación primaria o "Cuerpo de agua" a Vegetación Sabanoide.</td></tr>
-                    <tr><td>9</td><td> Degradación moderada superior</td><td class="media">IE media</td><td>Cambio de cualquier clase de Vegetación primaria o "Cuerpo de agua" a Vegetación Secundaria Herbácea.</td></tr>
-                    <tr><td>10</td><td> Degradación severa inferior</td><td class="baja">IE baja</td><td>Cambio de cualquier clase de Vegetación primaria o "Cuerpo de agua" a Palmar inducido, Pastizal inducido o Pastizal cultivado.</td></tr>
-                    <tr><td>11</td><td> Degradación severa media</td><td class="baja">IE baja</td><td>Cambio de cualquier clase de Vegetación primaria o "Cuerpo de agua" a Agricultura de temporal.</td></tr>
-                    <tr><td>12</td><td> Degradación severa superior</td><td class="baja">IE baja</td><td>Cambio de cualquier clase de Vegetación primaria o "Cuerpo de agua" a Agricultura de riego.</td></tr>
-                    <tr><td>13</td><td> Degradación muy severa inferior</td><td class="baja">IE baja</td><td>Cambio de cualquier clase de Vegetación primaria o "Cuerpo de agua" a Agricultura de humedad.</td></tr>
-                    <tr><td>14</td><td> Degradación muy severa media</td><td class="muybaja">IE muy baja</td><td>Cambio de cualquier clase de Vegetación primaria o "Cuerpo de agua" a Desprovista de Vegetación.</td></tr>
-                    <tr><td>15</td><td> Degradación muy severa superior</td><td class="muybaja">IE muy baja</td><td>Cambio de cualquier clase de Vegetación primaria a "Asentamiento humano".</td></tr>
-                    </tbody>
+                    <tr><td class="muybaja">1</td><td class="muybaja"> Degradación muy severa superior</td><td class="muybaja">IE muy baja</td><td>Cambio de cualquier clase de Vegetación primaria a Asentamiento humano.</td></tr>
+                    <tr><td class="muybaja">2</td><td class="muybaja"> Degradación muy severa media</td><td class="muybaja">IE muy baja</td><td>Cambio de cualquier clase de Vegetación primaria o Cuerpo de agua a Desprovista de Vegetación.</td></tr>
+                    <tr><td class="baja">3</td><td class="baja"> Degradación muy severa inferior</td><td class="baja">IE baja</td><td>Cambio de cualquier clase de Vegetación primaria o Cuerpo de agua a Agricultura de humedad.</td></tr>
+                    <tr><td class="baja">4</td><td class="baja"> Degradación severa superior</td><td class="baja">IE baja</td><td>Cambio de cualquier clase de Vegetación primaria o Cuerpo de agua a Agricultura de riego.</td></tr>
+                    <tr><td class="baja">5</td><td class="baja"> Degradación severa media</td><td class="baja">IE baja</td><td>Cambio de cualquier clase de Vegetación primaria o Cuerpo de agua a Agricultura de temporal.</td></tr>
+                    <tr><td class="baja">6</td><td class="baja"> Degradación severa inferior</td><td class="baja">IE baja</td><td>Cambio de cualquier clase de Vegetación primaria o Cuerpo de agua a Palmar inducido, Pastizal inducido o Pastizal cultivado.</td></tr>
+                    <tr><td class="media">7</td><td class="media"> Degradación moderada superior</td><td class="media">IE media</td><td>Cambio de cualquier clase de Vegetación primaria o Cuerpo de agua a Vegetación Secundaria Herbácea.</td></tr>
+                    <tr><td class="media">8</td><td class="media"> Degradación moderada media</td><td class="media">IE media</td><td>Cambio de cualquier clase de Vegetación primaria o Cuerpo de agua a Vegetación Sabanoide.</td></tr>
+                    <tr><td class="media">9</td><td class="media"> Degradación moderada inferior</td><td class="media">IE media</td><td>Cambio de cualquier clase de Vegetación primaria o Cuerpo de agua a Vegetación Secundaria Arbustiva</td></tr>
+                    <tr><td class="media">10</td><td class="media"> Degradación moderada superior</td><td class="media">IE media</td><td>Cambio de cualquier clase de Vegetación primaria o Cuerpo de agua a Bosque inducido o Bosque cultivado (antes Plantación forestal).</td></tr>
+                    <tr><td class="media">11</td><td class="media"> Degradación somera media</td><td class="media">IE media</td><td>Cambio de cualquier tipo de Vegetación primaria o Cuerpo de agua a Vegetación Secundaria Arbórea</td></tr>
+                    <tr><td class="alta">12</td><td class="alta"> Degradación somera inferior</td><td class="alta">IE alta</td><td>No hay cambio de estado primario, sí hay cambio de tipo de vegetación a otra ecovariante pero descendiendo el porte del estrato dominante (e.g. Matorral a Pastizal o Herbazal). Cuerpo de agua cambia a Vegetación primaria.</td></tr>
+                    <tr><td class="alta">13</td><td class="alta"> Pseudoestasis superior</td><td class="alta">IE alta</td><td>No hay cambio de estado primario, sí hay cambio de tipo de vegetación a otra ecovariante pero manteniéndose el porte del estrato dominante (e.g. Bosque de Encino a Selva Baja).</td></tr>
+                    <tr><td class="alta">14</td><td class="alta"> Pseudoestasis media</td><td class="alta">IE alta</td><td>No hay cambio de estado primario, sí hay cambio de tipo de vegetación a otra ecovariante pero el estrato dominante ascendiendo en porte (e.g. Matorral a Bosque).</td></tr>
+                    <tr><td class="alta">15</td><td class="alta"> Pseudoestasis inferior</td><td class="alta">IE alta</td><td>No hay cambio de estado primario, sí hay cambio de tipo de vegetación pero dentro de la misma ecovariante.</td></tr>
+                    <tr><td class="alta">16</td><td class="alta"> Estasis</td><td class="alta">IE alta</td><td>No hay cambio de tipo de vegetación ni de estado primario.</td></tr>
+                </tbody>
                 </table>
                 ')
             )

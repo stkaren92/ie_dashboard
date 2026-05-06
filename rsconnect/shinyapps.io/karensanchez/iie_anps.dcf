@@ -5,9 +5,9 @@ account: karensanchez
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 16185441
-bundleId: 11772160
+bundleId: 11948721
 url: https://karensanchez.shinyapps.io/iie_anps/
 version: 1
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: .RData|.RDataTmp|scripts/metrics_by_complejo.R|scripts/plots.R|scripts/test.R|plots|technical_note
+ignoredFiles: .RData|.RDataTmp|renv.lock|scripts/metrics_by_complejo.R|scripts/plots.R|scripts/test.R|plots|technical_note
