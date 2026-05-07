@@ -8,8 +8,9 @@ format:
     colorlinks: true
 editor: visual
 params:
+  rproject_path: "/Users/kasanchez/Documents/ie_dashboard"
+  project_name: "cosmos" # cosmos or other
   anp_name: "Iztaccíhuatl-Popocatépetl"
-  project_name: "cosmos"
 ---
 
 ```{r define-colorize, echo=FALSE}
@@ -134,13 +135,14 @@ library(RColorBrewer)
 
 anp_name <- params$anp_name
 project_name <- params$project_name
+rproject_path <- params$rproject_path
 
 # Input
-buffer_folder <- "/Users/kasanchez/Documents/ie_dashboard/data/Zonas de Influencia_Vectores/"
-anp_shp <- vect('/Users/kasanchez/Documents/ie_dashboard/data/anp/232_ANP-ITRF08_04072025.shp')
+buffer_folder <- paste0(rproject_path,"/data/Zonas de Influencia_Vectores/")
+anp_shp <- vect(paste0(rproject_path,"/data/anp/232_ANP-ITRF08_04072025.shp"))
 
 # Update Cienegas de Lerma shapefile
-lerma_shp <- vect('/Users/kasanchez/Documents/ie_dashboard/data/anp/cienegas_lerma/Subzon_CLerma_utmitrf08_DOFPM.shp')
+lerma_shp <- vect(paste0(rproject_path,"/data/anp/cienegas_lerma/Subzon_CLerma_utmitrf08_DOFPM.shp"))
 lerma_shp <-  project(lerma_shp, crs(anp_shp))
 lerma_shp <- aggregate(lerma_shp)
 values(lerma_shp) <- values(anp_shp[anp_shp$NOMBRE == "Ciénegas del Lerma"])
@@ -149,9 +151,9 @@ anp_shp <- rbind(anp_shp, lerma_shp)
 
 
 if(project_name == "cosmos"){
-  df_cosmos_anps <- read.csv('/Users/kasanchez/Documents/ie_dashboard/data/anp_cosmos/cosmos_anps.csv')
+  df_cosmos_anps <- read.csv(paste0(rproject_path,"/data/anp_cosmos/cosmos_anps.csv"))
 } else(
-    df_cosmos_anps <- read.csv('/Users/kasanchez/Documents/ie_dashboard/data/anp_sym/sym_anps.csv')
+    df_cosmos_anps <- read.csv(paste0(rproject_path,'/data/anp_sym/sym_anps.csv'))
 )
 
 col_palette <- brewer.pal(4, "RdYlBu")
@@ -172,7 +174,7 @@ for(anp in df_cosmos_anps$ANP_name) {
   for(y in c(2020,2023)){
     
     # Get ANP IE raster
-    ie <- rast(paste0('/Users/kasanchez/Documents/ie_dashboard/data/ie/ie_xgb_',y,'.tif'))
+    ie <- rast(paste0(rproject_path,'/data/ie/ie_xgb_',y,'.tif'))
     anp_selected_shp <- project(subset(anp_shp, anp_shp$NOMBRE == anp), crs(ie))
     ie_anp <- crop(ie, 
                    anp_selected_shp, 
@@ -473,7 +475,7 @@ colores <- c(
 #| fig-height: 3.6
 
 # IE raster
-ie <- rast('/Users/kasanchez/Documents/ie_dashboard/data/ie/ie_xgb_2023.tif')
+ie <- rast(paste0(rproject_path,'/data/ie/ie_xgb_2023.tif'))
 # ANP shapefile
 anp_selected <- project(subset(anp_shp, anp_shp$NOMBRE == anp_name),crs(ie))
 
