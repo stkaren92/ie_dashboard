@@ -38,8 +38,8 @@ buffer_files <- list.files(buffer_folder, pattern = "\\.shp$", full.names = TRUE
 buffer_list <- lapply(buffer_files, vect)
 names(buffer_list) <- tools::file_path_sans_ext(basename(buffer_files))
 
-# anp_file <- anp_file[anp_file$NOMBRE %in% sym_anps$ANP_name |
-#                        anp_file$NOMBRE %in% cosmos_anps$ANP_name]
+anp_file <- anp_file[anp_file$NOMBRE %in% sym_anps$ANP_name |
+                       anp_file$NOMBRE %in% cosmos_anps$ANP_name]
 
 col_pal <- brewer.pal(4, "RdYlGn")
 
@@ -255,7 +255,7 @@ ui <- navbarPage(
                      respecto a su situación actual. Para estimarlo se comparó 
                      la vegetación primaria (vegetación antes de los grandes 
                      cambios antropogénicos) con el mapa de uso de suelo y 
-                     vegetación de INEGI 2017."),
+                     vegetación, INEGI, Serie VII."),
             markdown("El IIE para un año diferente a 2017, se estima a partir 
             de un modelo XGBoost, que considera como variables predictoras las 
             zonas de vida de Holdridge y la elevación, como factores de las 
@@ -263,9 +263,10 @@ ui <- navbarPage(
             al modelo mediante datos de fotosíntesis y datos de radar Sentinel-1.
             También se consideró la cobertura terrestre, que identifica distintos 
             tipos relacionados a cierta integridad ecosistémica, como cultivos y 
-            asentamientos urbanos. Con base en esto, el modelo predice el IIE 
-            anual de todo el territorio Mexicano, donde 0 es el estado más 
-            íntegro y el 15 el más degradado.")
+            asentamientos urbanos. Con base en esto, el modelo predice 16 
+                     clases de Integridad Ecosistémica en la superficie de 
+                     las Áreas Naturales Protegidas y en sus zonas de 
+                     influencia.")
           )
         )
       ),

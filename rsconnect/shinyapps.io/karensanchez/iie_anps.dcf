@@ -5,7 +5,7 @@ account: karensanchez
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 16185441
-bundleId: 11948721
+bundleId: 12010133
 url: https://karensanchez.shinyapps.io/iie_anps/
 version: 1
 asMultiple: FALSE
