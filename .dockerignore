@@ -1,0 +1,7 @@
+.git
+README.md
+.Rhistory
+.Rproj.user
+*.Rproj
+renv
+.Rprofile
