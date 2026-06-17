@@ -1026,11 +1026,11 @@ table_change_com %>%
 
 El `r complejo_name` tiene:
 
--   $EIE_{2023}$: `r color_ie_alta(ie_alta_com)` `r diff_text(ie_alta_com_diff)`.
+- $EIE_{2023}$: `r color_ie_alta(ie_alta_com)` `r diff_text(ie_alta_com_diff)`.
 
--   $Ef_{IE,2023}$: `r color_efectividad(efectividad_com)` `r diff_text(efectividad_com_diff)`.
+- $Ef_{IE,2023}$: `r color_efectividad(efectividad_com)` `r diff_text(efectividad_com_diff)`.
 
--   $P_{2023}$: `r color_presion(presion_com)` `r diff_text(presion_com_diff)`.
+- $P_{2023}$: `r color_presion(presion_com)` `r diff_text(presion_com_diff)`.
 
 ## SÍNTESIS
 
@@ -1060,9 +1060,7 @@ En el caso de las ANP, la eficacia en la protección de la IE la entenderemos co
 
 El valor de la eficacia en la protección de la IE ($Ef_{IE}$) del ANP, se calcula como el **cociente del porcentaje de IE alta dentro del ANP (**$\%IE_{alta}(ANP)$**) entre el porcentaje de IE alta en el área de la Zona de Influencia (**$\%IE_{alta}(ZI)$**)**, es decir:
 
-$$
-Ef_{IE}=\frac{\%IE_{alta}(ANP)}{\%IE_{alta}(ZI)}
-$$
+$$Ef_{IE}=\frac{\%IE_{alta}(ANP)}{\%IE_{alta}(ZI)}$$
 
 El indicador de eficacia representa el número de veces que hay de porcentaje de IE alta dentro del ANP con respecto a lo que hay afuera de ella, por lo que nos informa sobre el efecto de las acciones logradas en la IE. Un valor de 1 significa condiciones similares dentro y fuera del ANP (es decir igual proporción de área de IE alta) y \<1 significa una mejor condición afuera del ANP que adentro, por lo que en ambos casos no parecen ser relevantes las acciones de manejo del ANP. En contraste, obtener valores arriba de 1 indica una mejor condición adentro del ANP que afuera, por lo que indica un manejo adecuado y eficaz dada la condición y presión existente en el ANP.
 
@@ -1070,9 +1068,7 @@ El indicador de eficacia representa el número de veces que hay de porcentaje de
 
 Definimos la Presión ($P$) de la Zona de Influencia (ZI) como el **porcentaje del total del área que no tiene IE alta en la Zona de Influencia (ZI)**, es decir:
 
-$$
-P=100\%-\%IE_{alta}(ZI)
-$$
+$$P=100\%-\%IE_{alta}(ZI)$$
 
 El porcentaje de $IE_{alta}$ en la ZI nos indica el **grado de presión existente en el territorio alrededor de la ANP, si éste es bajo la presión es mayor.**
 
