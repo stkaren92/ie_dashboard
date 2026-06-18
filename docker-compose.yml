@@ -1,6 +1,7 @@
 services:
   app:
     build: .  
+    platform: linux/amd64
     working_dir: /srv/shiny-server
     ports:
       - "${IE_EXTERNAL_PORT:-3838}:3838"  
