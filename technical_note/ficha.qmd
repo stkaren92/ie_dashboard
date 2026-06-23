@@ -1,7 +1,6 @@
 ---
 format: 
   pdf:
-    include-in-header: header_cosmos.tex
     pdf-engine: xelatex
     classoption: [twocolumn, landscape]
     fontsize: 11pt
