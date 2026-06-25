@@ -21,8 +21,11 @@ names(raster_list) <- gsub('data/ie//ie_xgb_','',
 # Read ANP shapefile
 anp_file <- vect('data/anp/232_ANP-ITRF08_04072025.shp')
 anp_file <-  project(anp_file, crs(raster_list['2017']))
-cosmos_anps <- read.csv('data/anp_cosmos/cosmos_anps.csv')
-sym_anps <- read.csv('data/anp_sym/sym_anps.csv')
+
+# Read ANP catalog
+catalogo_anps <- read.csv('data/catalogo_anps.csv',
+                          fileEncoding = "UTF-8-BOM")
+catalogo_anps$Buffer_file[is.na(catalogo_anps$Buffer_file)] <- ""
 
 # Update Cienegas de Lerma shapefile
 lerma_shp <- vect('data/anp/cienegas_lerma/Subzon_CLerma_utmitrf08_DOFPM.shp')
@@ -38,10 +41,12 @@ buffer_files <- list.files(buffer_folder, pattern = "\\.shp$", full.names = TRUE
 buffer_list <- lapply(buffer_files, vect)
 names(buffer_list) <- tools::file_path_sans_ext(basename(buffer_files))
 
-anp_file <- anp_file[anp_file$NOMBRE %in% sym_anps$ANP_name |
-                       anp_file$NOMBRE %in% cosmos_anps$ANP_name]
-
+# Color palette
 col_pal <- brewer.pal(4, "RdYlGn")
+
+# Filter ANPs from catalog
+anp_file <- anp_file[anp_file$NOMBRE %in% catalogo_anps$ANP_name]
+project_choices <- c(sort(unique(catalogo_anps$Proyecto)), "Total")
 
 ui <- navbarPage(
   title = "Integridad ecosistémica",  
@@ -165,11 +170,8 @@ ui <- navbarPage(
              # Left column: controls (replaces sidebarPanel)
              column(
                width = 3,
-               # checkboxInput("cosmos", "Filtrar COSMOS", value = TRUE),
                selectizeInput('filtrar_anps', "Filtrar ANPs por proyecto",
-                              choices = c("CoSMoS",
-                                          "Sierra y Mar",
-                                          "Total"),
+                              choices = project_choices,
                               selected = "Total"),
                selectizeInput('anp', "Seleccionar ANP", choices = NULL),
                selectizeInput('ie_categories', "Seleccionar mapa", 
@@ -374,29 +376,22 @@ ui <- navbarPage(
 # Define server
 server <- function(input, output, session) {
   
-  # # Returns list of ANPs' names
-  # anp_names_list <- reactive({
-  #   if(input$cosmos==TRUE){
-  #     anp_names_list <- subset(anp_file, 
-  #                              anp_file$NOMBRE %in% cosmos_anps$ANP_name)$NOMBRE
-  #   }else{
-  #     anp_names_list <- anp_file$NOMBRE
-  #   }
-  #   return(anp_names_list)
-  # })
-  
   # Returns list of ANPs' names
   anp_names_list <- reactive({
-    if(input$filtrar_anps=="CoSMoS"){
-      anp_names_list <- subset(anp_file, 
-                               anp_file$NOMBRE %in% cosmos_anps$ANP_name)$NOMBRE
-    }else if(input$filtrar_anps=="Sierra y Mar"){
-      anp_names_list <- subset(anp_file, 
-                               anp_file$NOMBRE %in% sym_anps$ANP_name)$NOMBRE
-    }else{
+    if(input$filtrar_anps=="Total"){
       anp_names_list <- anp_file$NOMBRE
-      }
+    } else {
+      anp_names_list <- subset(anp_file,
+                               anp_file$NOMBRE %in%
+                                 catalogo_anps[catalogo_anps$Proyecto == input$filtrar_anps,
+                                               "ANP_name"])$NOMBRE
+    }
     return(anp_names_list)
+  })
+
+  selected_anp_meta <- reactive({
+    req(input$anp)
+    catalogo_anps[catalogo_anps$ANP_name == input$anp, ][1, ]
   })
   
   # Updates list of ANPs to select from
@@ -409,14 +404,7 @@ server <- function(input, output, session) {
   
   # Updates technical note download link with selected ANP
   anp_shortname <- reactive({
-    req(input$anp)
-    if(input$anp %in% cosmos_anps$ANP_name){
-      anp_selected_shortname <- cosmos_anps[cosmos_anps$ANP_name == input$anp, 
-                                         "ANP_shortname"]
-    } else if (input$anp %in% sym_anps$ANP_name) {
-      anp_selected_shortname <- sym_anps[sym_anps$ANP_name == input$anp, 
-                                            "ANP_shortname"]
-    }
+    anp_selected_shortname <- selected_anp_meta()$ANP_shortname
     return(paste0("ficha_",anp_selected_shortname,".pdf"))
   })
   output$dlURL <- renderUI({
@@ -440,15 +428,17 @@ server <- function(input, output, session) {
   # from the selected ANP and the basal year (2017)
   ie_by_location_basal <- reactive({
     req(input$anp)
-    req(input$cosmos)
     ie <- raster_list['2017']
     anp_selected <- anp_selected()
     
     ie_anp <- crop(ie, anp_selected, mask=TRUE)
     
-    if(input$anp %in% cosmos_anps$ANP_name){
-      anp_selected_buffer <- cosmos_anps[cosmos_anps$ANP_name == input$anp, 
-                                         "Buffer_file"]
+    anp_selected_buffer <- selected_anp_meta()$Buffer_file
+    if(nzchar(anp_selected_buffer)){
+      if(!anp_selected_buffer %in% names(buffer_list)) {
+        stop(paste("No existe el shapefile de zona de influencia:",
+                   anp_selected_buffer))
+      }
       
       periphery <- buffer_list[[anp_selected_buffer]]
       periphery <- project(periphery, crs(ie))
@@ -479,9 +469,12 @@ server <- function(input, output, session) {
     anp_selected <- anp_selected()
     
     ie_anp <- crop(ie, anp_selected, mask=TRUE)
-    if(input$anp %in% cosmos_anps$ANP_name){
-      anp_selected_buffer <- cosmos_anps[cosmos_anps$ANP_name == input$anp, 
-                                         "Buffer_file"]
+    anp_selected_buffer <- selected_anp_meta()$Buffer_file
+    if(nzchar(anp_selected_buffer)){
+      if(!anp_selected_buffer %in% names(buffer_list)) {
+        stop(paste("No existe el shapefile de zona de influencia:",
+                   anp_selected_buffer))
+      }
       
       periphery <- buffer_list[[anp_selected_buffer]]
       periphery <- project(periphery, crs(ie))
@@ -540,9 +533,12 @@ server <- function(input, output, session) {
     ie <- raster_list['2017']
     raster_list_anp <- crop(raster_list, anp_selected, mask=TRUE)
     
-    if(input$anp %in% cosmos_anps$ANP_name){
-      anp_selected_buffer <- cosmos_anps[cosmos_anps$ANP_name == input$anp,
-                                         "Buffer_file"]
+    anp_selected_buffer <- selected_anp_meta()$Buffer_file
+    if(nzchar(anp_selected_buffer)){
+      if(!anp_selected_buffer %in% names(buffer_list)) {
+        stop(paste("No existe el shapefile de zona de influencia:",
+                   anp_selected_buffer))
+      }
 
       periphery <- buffer_list[[anp_selected_buffer]]
       periphery <- project(periphery, crs(ie))

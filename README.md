@@ -18,8 +18,7 @@ Aplicacion Shiny para explorar el Indice de Integridad Ecosistemica (IIE) en Are
 |-- app.R                         # Aplicacion Shiny
 |-- data/
 |   |-- anp/                      # Shapefile base de ANP y ajustes locales
-|   |-- anp_cosmos/               # Catalogo de ANP del proyecto CoSMoS
-|   |-- anp_sym/                  # Catalogo de ANP del proyecto Sierra y Mar
+|   |-- catalogo_anps.csv         # Catalogo unificado de ANP y zonas de influencia
 |   |-- ie/                       # Rasters de IIE por año
 |   `-- Zonas de Influencia_Vectores/
 |       |-- *.shp                 # Zonas de influencia por ANP
@@ -69,9 +68,8 @@ La aplicacion carga los siguientes insumos al iniciar:
 - `data/ie/ie_xgb_2017.tif`, `data/ie/ie_xgb_2020.tif` y `data/ie/ie_xgb_2023.tif`: rasters del IIE.
 - `data/anp/232_ANP-ITRF08_04072025.shp`: poligonos base de ANP.
 - `data/anp/cienegas_lerma/Subzon_CLerma_utmitrf08_DOFPM.shp`: geometria usada para reemplazar/agregar el caso de Cienegas del Lerma.
-- `data/anp_cosmos/cosmos_anps.csv`: ANP del proyecto CoSMoS y el archivo de zona de influencia asociado.
-- `data/anp_sym/sym_anps.csv`: ANP del proyecto Sierra y Mar.
-- `data/Zonas de Influencia_Vectores/*.shp`: zonas de influencia. Para ANP sin zona definida en el catalogo CoSMoS, la app calcula un buffer de 20 km.
+- `data/catalogo_anps.csv`: catalogo unificado de ANP por proyecto, clave corta y archivo de zona de influencia cuando existe.
+- `data/Zonas de Influencia_Vectores/*.shp`: zonas de influencia. Para ANP sin zona definida en el catalogo, la app calcula un buffer de 20 km.
 
 Los archivos de `www/ficha_*.pdf` son las fichas descargables que aparecen en el tablero.
 
@@ -83,12 +81,12 @@ Las fichas se generan con Quarto a partir de `technical_note/ficha.qmd`. Para re
 source("technical_note/run_qmd.R")
 ```
 
-El script recorre las ANP de `data/anp_cosmos/cosmos_anps.csv` y `data/anp_sym/sym_anps.csv`, genera archivos `ficha_<clave>.pdf` y usa los parametros `rproject_path`, `project_name` y `anp_name` de la plantilla Quarto.
+El script recorre las ANP de `data/catalogo_anps.csv`, genera archivos `ficha_<clave>.pdf` y usa los parametros `rproject_path`, `project_name` y `anp_name` de la plantilla Quarto.
 
 Despues de regenerarlas, copia o mueve las fichas finales a `www/` para que la app pueda ofrecerlas como descarga.
 
 ## Notas de mantenimiento
 
-- Si se agrega una nueva ANP, actualiza el catalogo correspondiente (`cosmos_anps.csv` o `sym_anps.csv`) y verifica que exista la ficha `www/ficha_<ANP_shortname>.pdf`.
-- Si una ANP CoSMoS usa zona de influencia definida, el campo `Buffer_file` debe coincidir con el nombre base del shapefile en `data/Zonas de Influencia_Vectores/`.
+- Si se agrega una nueva ANP, actualiza `data/catalogo_anps.csv` y verifica que exista la ficha `www/ficha_<ANP_shortname>.pdf`.
+- Si una ANP usa zona de influencia definida, el campo `Buffer_file` debe coincidir con el nombre base del shapefile en `data/Zonas de Influencia_Vectores/`. Si `Buffer_file` esta vacio, la app calcula un buffer de 20 km.
 - Si se agregan nuevos años de IIE, coloca los rasters como `data/ie/ie_xgb_<año>.tif` y ajusta el `sliderInput` en `app.R`.

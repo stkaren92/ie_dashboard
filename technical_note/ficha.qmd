@@ -8,7 +8,7 @@ format:
 editor: visual
 params:
   rproject_path: "/Users/kasanchez/Documents/ie_dashboard"
-  project_name: "cosmos" # cosmos or other
+  project_name: "CoSMoS" # CoSMoS or Sierra y Mar
   anp_name: "Iztaccíhuatl-Popocatépetl"
 ---
 
@@ -149,16 +149,16 @@ anp_shp <- anp_shp[anp_shp$NOMBRE != "Ciénegas del Lerma"]
 anp_shp <- rbind(anp_shp, lerma_shp)
 
 
-if(project_name == "cosmos"){
-  df_cosmos_anps <- read.csv(paste0(rproject_path,"/data/anp_cosmos/cosmos_anps.csv"))
-} else(
-    df_cosmos_anps <- read.csv(paste0(rproject_path,'/data/anp_sym/sym_anps.csv'))
-)
+catalogo_anps <- read.csv(paste0(rproject_path,"/data/catalogo_anps.csv"),
+                          fileEncoding = "UTF-8-BOM")
+catalogo_anps$Buffer_file[is.na(catalogo_anps$Buffer_file)] <- ""
+
+df_anps <- catalogo_anps[catalogo_anps$Proyecto == project_name, ]
 
 col_palette <- brewer.pal(4, "RdYlBu")
 
-complejo_name <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp_name,"Complejo"]
-anp_shortname <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp_name,"ANP_shortname"]
+complejo_name <- df_anps[df_anps$ANP_name == anp_name,"Complejo"]
+anp_shortname <- df_anps[df_anps$ANP_name == anp_name,"ANP_shortname"]
 
 # Load buffer shapefiles on a named list
 buffer_files <- list.files(buffer_folder, pattern = "\\.shp$", full.names = TRUE)
@@ -169,7 +169,7 @@ names(buffer_list) <- tools::file_path_sans_ext(basename(buffer_files))
 # to get the IE values of each pixel of the ANP
 # and its periphery
 df_ie_total <- data.frame()
-for(anp in df_cosmos_anps$ANP_name) {
+for(anp in df_anps$ANP_name) {
   for(y in c(2020,2023)){
     
     # Get ANP IE raster
@@ -180,9 +180,13 @@ for(anp in df_cosmos_anps$ANP_name) {
                    mask=TRUE)
     
     # Get periphery IE raster
-    if(project_name == "cosmos"){
-      anp_selected_buffer <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp, 
-                                          "Buffer_file"]
+    anp_selected_buffer <- df_anps[df_anps$ANP_name == anp,
+                                   "Buffer_file"]
+    if(nzchar(anp_selected_buffer)){
+      if(!anp_selected_buffer %in% names(buffer_list)) {
+        stop(paste("No existe el shapefile de zona de influencia:",
+                   anp_selected_buffer))
+      }
       
       periphery <- buffer_list[[anp_selected_buffer]]
       periphery <- project(periphery, crs(ie))
@@ -221,7 +225,7 @@ for(anp in df_cosmos_anps$ANP_name) {
 }
 # Join ANP short name
 df_ie_total <- df_ie_total %>% 
-  left_join(df_cosmos_anps %>% 
+  left_join(df_anps %>%
               select(ANP_name,ANP_shortname,Complejo),
             by=c("anp_name"="ANP_name"))
 
@@ -482,9 +486,13 @@ anp_selected <- project(subset(anp_shp, anp_shp$NOMBRE == anp_name),crs(ie))
 ie_anp <- crop(ie, anp_selected, mask=TRUE)
 
 # IE raster of periphery
-if(project_name == "cosmos"){
-      anp_selected_buffer <- df_cosmos_anps[df_cosmos_anps$ANP_name == anp_name, 
-                                          "Buffer_file"]
+anp_selected_buffer <- df_anps[df_anps$ANP_name == anp_name,
+                               "Buffer_file"]
+if(nzchar(anp_selected_buffer)){
+      if(!anp_selected_buffer %in% names(buffer_list)) {
+        stop(paste("No existe el shapefile de zona de influencia:",
+                   anp_selected_buffer))
+      }
       
       periphery <- buffer_list[[anp_selected_buffer]]
       periphery <- project(periphery, crs(ie))
@@ -1104,7 +1112,7 @@ Las clases del IIE se reportan en el mapa  raster en dos versiones:
 ```{r print-agradecimientos, echo=FALSE}
 #| results: asis
 
-if(project_name == "cosmos"){
+if(project_name == "CoSMoS"){
   cat("## Agradecimientos\n")
   cat("Estas acciones son posibles gracias al apoyo del proyecto Conservación y Uso Sostenible en Montañas y Sierras (CoSMoS), una iniciativa respaldada por la Cooperación Alemana a través de KfW, implementada en coordinación entre CONANP, CONABIO y FMCN.")
 }
